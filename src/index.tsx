@@ -24,6 +24,14 @@ export * from "./ui/resizable";
 export * from "./ui/accordion";
 export * from "./ui/switch";
 
+// Lightbox
+export * from "./ui/lightbox/LightboxViewer";
+export * from "./ui/lightbox/PannableImage";
+export * from "./ui/lightbox/ImageThumbnailStrip";
+export * from "./ui/lightbox/GalleryPicker";
+export * from "./providers/ImageDialogProvider";
+export * from "./context/ImageDialogContext";
+export * from "./types/gallery";
 
 export { ExternalNavProvider } from "./providers/ExternalNav";
 export { useExternalNav } from "./hooks/useExternalNav";

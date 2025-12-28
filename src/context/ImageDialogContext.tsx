@@ -1,0 +1,44 @@
+import { createContext, useContext } from "react";
+import type { Gallery, GalleryImage, ImageAction } from "../types/gallery";
+
+export interface GalleryWithTotal extends Gallery {
+  totalImages?: number;
+}
+
+export interface ImageDialogContextType {
+  // openImage: src, then optional galleryId OR an inline gallery-like context (images[])
+  openImage: (
+    imageSrc: string,
+    galleryIdOrContext?:
+      | string
+      | { images: GalleryImage[]; id?: string; name?: string }
+      | any,
+    initialIndex?: number,
+    actions?: ImageAction[],
+    imagePath?: string
+  ) => void;
+  // Allows external callers (like Search) to update the shared gallery images
+  setGalleryImages: (
+    images: GalleryImage[],
+    replace?: boolean,
+    newIndex?: number,
+    totalImages?: number
+  ) => void;
+  closeImage: () => void;
+  galleries: Gallery[];
+  currentGallery: GalleryWithTotal | null;
+  currentImageIndex: number;
+  isOpen: boolean;
+}
+
+export const ImageDialogContext = createContext<ImageDialogContextType | null>(
+  null
+);
+
+export const useImageDialog = () => {
+  const context = useContext(ImageDialogContext);
+  if (!context) {
+    throw new Error("useImageDialog must be used within ImageDialogProvider");
+  }
+  return context;
+};
