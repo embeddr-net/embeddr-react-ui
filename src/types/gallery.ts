@@ -1,4 +1,4 @@
-import { type ReactNode } from "react";
+import type {ReactNode} from "react";
 
 export interface GalleryImage {
   src: string;
@@ -13,14 +13,14 @@ export interface Gallery {
   name: string;
   description?: string;
   thumbnail: string;
-  images: GalleryImage[];
+  images: Array<GalleryImage>;
   customHtml?: string; // Optional HTML content for gallery info
   totalImages?: number;
   fetchMore?: (direction: "next" | "prev", offset: number) => Promise<void>;
 }
 
 export interface GalleriesData {
-  galleries: Gallery[];
+  galleries: Array<Gallery>;
 }
 
 export interface ImageAction {

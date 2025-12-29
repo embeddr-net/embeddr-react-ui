@@ -1,5 +1,5 @@
-import { ChevronUp, ChevronDown, Info } from "lucide-react";
-import { useState, useRef, useEffect } from "react";
+import { ChevronDown, ChevronUp, Info } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
 import type { Gallery } from "../../types/gallery";
 
 interface ImageThumbnailStripProps {

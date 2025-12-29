@@ -1,6 +1,6 @@
 import * as React from "react";
 import { GripVerticalIcon } from "lucide-react";
-import { Panel, Group, Separator } from "react-resizable-panels";
+import { Group, Panel, Separator } from "react-resizable-panels";
 
 import { cn } from "../lib/utils";
 

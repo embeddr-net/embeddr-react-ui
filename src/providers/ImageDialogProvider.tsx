@@ -1,23 +1,25 @@
 import {
-  type ReactNode,
+  
   useCallback,
   useEffect,
   useMemo,
   useRef,
-  useState,
+  useState
 } from "react";
+import { VisuallyHidden } from "@radix-ui/react-visually-hidden";
 import {
   Dialog,
   DialogContent,
-  DialogTitle,
   DialogDescription,
+  DialogTitle,
 } from "../ui/dialog";
-import { VisuallyHidden } from "@radix-ui/react-visually-hidden";
 import { LightboxViewer } from "../ui/lightbox/LightboxViewer";
 import {
-  ImageDialogContext,
-  type GalleryWithTotal,
+  
+  ImageDialogContext
 } from "../context/ImageDialogContext";
+import type {GalleryWithTotal} from "../context/ImageDialogContext";
+import type {ReactNode} from "react";
 import type { Gallery, GalleryImage, ImageAction } from "../types/gallery";
 
 export const ImageDialogProvider = ({ children }: { children: ReactNode }) => {
@@ -25,20 +27,20 @@ export const ImageDialogProvider = ({ children }: { children: ReactNode }) => {
 
   const [isOpen, setIsOpen] = useState(false);
   const [imageSrc, setImageSrc] = useState<string | null>(null);
-  const [galleries, setGalleries] = useState<Gallery[]>([]);
+  const [galleries, setGalleries] = useState<Array<Gallery>>([]);
   const [currentGallery, setCurrentGallery] = useState<GalleryWithTotal | null>(
     null
   );
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [pendingIndex, setPendingIndex] = useState<number | null>(null);
-  const [actions, setActions] = useState<ImageAction[]>([]);
+  const [actions, setActions] = useState<Array<ImageAction>>([]);
 
   const openImage = useCallback(
     (
       src: string,
       galleryOrMetadata?: any,
       initialIndex?: number,
-      customActions: ImageAction[] = [],
+      customActions: Array<ImageAction> = [],
       imagePath?: string
     ) => {
       setImageSrc(src);
@@ -177,7 +179,7 @@ export const ImageDialogProvider = ({ children }: { children: ReactNode }) => {
 
   const setGalleryImages = useCallback(
     (
-      images: GalleryImage[] | any,
+      images: Array<GalleryImage> | any,
       replace = true,
       newIndex?: number,
       totalImages?: number

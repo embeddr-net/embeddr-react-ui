@@ -2,9 +2,9 @@ import React, { useState } from "react";
 import {
   Dialog,
   DialogContent,
-  DialogTitle,
   DialogDescription,
   DialogFooter,
+  DialogTitle,
 } from "../ui/dialog";
 import { Button } from "../ui/button";
 import { ExternalNavContext } from "../hooks/useExternalNav";

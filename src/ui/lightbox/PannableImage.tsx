@@ -1,12 +1,13 @@
 import {
+  
   useCallback,
   useEffect,
   useRef,
-  useState,
-  type ReactNode,
+  useState
 } from "react";
 import { RotateCcw, RotateCw } from "lucide-react";
 import { Button } from "../button";
+import type {ReactNode} from "react";
 
 interface PannableImageAction {
   icon: ReactNode;
@@ -18,7 +19,7 @@ interface PannableImageProps {
   src: string;
   className?: string;
   isOpen?: boolean;
-  actions?: PannableImageAction[];
+  actions?: Array<PannableImageAction>;
   controlsBottomOffset?: number;
 }
 

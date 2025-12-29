@@ -1,5 +1,5 @@
-import { useState, useEffect, useRef } from "react";
-import { Play, Pause, Loader2, X } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { Loader2, Pause, Play, X } from "lucide-react";
 import { Button } from "../button";
 import { PannableImage } from "./PannableImage";
 import { ImageThumbnailStrip } from "./ImageThumbnailStrip";
@@ -13,7 +13,7 @@ interface LightboxViewerProps {
   onGalleryChange: (galleryId: string) => void;
   onImageChange: (index: number) => void;
   isOpen?: boolean;
-  actions?: ImageAction[];
+  actions?: Array<ImageAction>;
   isLoading?: boolean;
   onClose?: () => void;
   showGalleryPicker?: boolean;

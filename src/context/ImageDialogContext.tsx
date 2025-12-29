@@ -11,21 +11,21 @@ export interface ImageDialogContextType {
     imageSrc: string,
     galleryIdOrContext?:
       | string
-      | { images: GalleryImage[]; id?: string; name?: string }
+      | { images: Array<GalleryImage>; id?: string; name?: string }
       | any,
     initialIndex?: number,
-    actions?: ImageAction[],
+    actions?: Array<ImageAction>,
     imagePath?: string
   ) => void;
   // Allows external callers (like Search) to update the shared gallery images
   setGalleryImages: (
-    images: GalleryImage[],
+    images: Array<GalleryImage>,
     replace?: boolean,
     newIndex?: number,
     totalImages?: number
   ) => void;
   closeImage: () => void;
-  galleries: Gallery[];
+  galleries: Array<Gallery>;
   currentGallery: GalleryWithTotal | null;
   currentImageIndex: number;
   isOpen: boolean;
