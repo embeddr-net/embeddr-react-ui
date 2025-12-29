@@ -1,6 +1,6 @@
 # Embeddr Components
 
-[<img src="https://img.shields.io/npm/v/%40embeddr%2Fui">](https://www.npmjs.com/package/@embeddr/ui)
+[<img src="https://img.shields.io/npm/v/%40embeddr%2Freact-ui">](https://www.npmjs.com/package/@embeddr/react-ui)
 
 [Embeddr](https://github.com/embeddr-net/embeddr-local)
 
