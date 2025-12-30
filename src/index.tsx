@@ -19,7 +19,6 @@ export * from "./ui/select";
 export * from "./ui/slider";
 export * from "./ui/dropdown-menu";
 export * from "./ui/tooltip";
-export * from "./ui/explorers/Umap3DExplorer";
 export * from "./ui/resizable";
 export * from "./ui/accordion";
 export * from "./ui/switch";
