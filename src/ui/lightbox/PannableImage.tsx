@@ -1,13 +1,7 @@
-import {
-  
-  useCallback,
-  useEffect,
-  useRef,
-  useState
-} from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { RotateCcw, RotateCw } from "lucide-react";
 import { Button } from "../button";
-import type {ReactNode} from "react";
+import type { ReactNode } from "react";
 
 interface PannableImageAction {
   icon: ReactNode;
@@ -344,7 +338,7 @@ export const PannableImage = ({
         onMouseUp={handleMouseUp}
         onMouseLeave={handleMouseUp}
         onDoubleClick={handleDoubleClick}
-        className={`w-[100dvw] h-[100dvh] transition-opacity duration-200 ${
+        className={`w-[100dvw] h-[100dvh] transition-opacity duration-500 ${
           isImageLoaded ? "opacity-100" : "opacity-0"
         } ${isDragging ? "cursor-grabbing" : "cursor-grab"} touch-none`}
       />

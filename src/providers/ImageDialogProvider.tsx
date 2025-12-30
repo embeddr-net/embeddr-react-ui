@@ -1,11 +1,4 @@
-import {
-  
-  useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-  useState
-} from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { VisuallyHidden } from "@radix-ui/react-visually-hidden";
 import {
   Dialog,
@@ -14,12 +7,9 @@ import {
   DialogTitle,
 } from "../ui/dialog";
 import { LightboxViewer } from "../ui/lightbox/LightboxViewer";
-import {
-  
-  ImageDialogContext
-} from "../context/ImageDialogContext";
-import type {GalleryWithTotal} from "../context/ImageDialogContext";
-import type {ReactNode} from "react";
+import { ImageDialogContext } from "../context/ImageDialogContext";
+import type { GalleryWithTotal } from "../context/ImageDialogContext";
+import type { ReactNode } from "react";
 import type { Gallery, GalleryImage, ImageAction } from "../types/gallery";
 
 export const ImageDialogProvider = ({ children }: { children: ReactNode }) => {
@@ -227,13 +217,13 @@ export const ImageDialogProvider = ({ children }: { children: ReactNode }) => {
       {children}
       <Dialog open={isOpen} onOpenChange={(open) => !open && closeImage()}>
         <DialogContent
-          className="max-w-[90vw] max-h-[95vh] min-w-[90vw] h-[95vh] w-full overflow-hidden flex items-center justify-center bg-background/95 backdrop-blur-sm p-0 border-2 border-border focus:outline-none data-[state=open]:animate-none data-[state=closed]:animate-none"
+          className="dark max-h-[calc(100%-4rem)] h-[calc(100%-4rem)] w-full overflow-hidden flex items-center justify-center bg-black/95! backdrop-blur-sm p-0 border-2 border-border focus:outline-none data-[state=open]:animate-none data-[state=closed]:animate-none"
           showCloseButton={false}
         >
           <VisuallyHidden>
             <DialogTitle>Image Viewer</DialogTitle>
             <DialogDescription>
-              View images in a lightbox gallery
+              View images in a lightbox gallery!!!
             </DialogDescription>
           </VisuallyHidden>
           <LightboxViewer
