@@ -246,7 +246,7 @@ export const PannableImage = ({
         const t2 = e.touches[1];
         const dist = Math.hypot(
           t1.clientX - t2.clientX,
-          t1.clientY - t2.clientY
+          t1.clientY - t2.clientY,
         );
 
         const scale = dist / touchState.initialDistance;
@@ -270,7 +270,7 @@ export const PannableImage = ({
         setDragStart({ x: t.clientX, y: t.clientY });
       }
     },
-    [touchState, isDragging, dragStart]
+    [touchState, isDragging, dragStart],
   );
 
   const handleTouchEnd = useCallback(() => {
@@ -293,7 +293,7 @@ export const PannableImage = ({
         setDragStart({ x: e.clientX, y: e.clientY });
       }
     },
-    [isDragging, dragStart]
+    [isDragging, dragStart],
   );
 
   const handleMouseUp = useCallback(() => {

@@ -19,7 +19,7 @@ export const ImageDialogProvider = ({ children }: { children: ReactNode }) => {
   const [imageSrc, setImageSrc] = useState<string | null>(null);
   const [galleries, setGalleries] = useState<Array<Gallery>>([]);
   const [currentGallery, setCurrentGallery] = useState<GalleryWithTotal | null>(
-    null
+    null,
   );
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [pendingIndex, setPendingIndex] = useState<number | null>(null);
@@ -31,7 +31,7 @@ export const ImageDialogProvider = ({ children }: { children: ReactNode }) => {
       galleryOrMetadata?: any,
       initialIndex?: number,
       customActions: Array<ImageAction> = [],
-      imagePath?: string
+      imagePath?: string,
     ) => {
       setImageSrc(src);
 
@@ -69,7 +69,7 @@ export const ImageDialogProvider = ({ children }: { children: ReactNode }) => {
       setActions(customActions);
       setIsOpen(true);
     },
-    []
+    [],
   );
 
   const closeImage = useCallback(() => {
@@ -172,7 +172,7 @@ export const ImageDialogProvider = ({ children }: { children: ReactNode }) => {
       images: Array<GalleryImage> | any,
       replace = true,
       newIndex?: number,
-      totalImages?: number
+      totalImages?: number,
     ) => {
       setCurrentGallery((prev) => {
         if (!prev) return null;
@@ -188,7 +188,7 @@ export const ImageDialogProvider = ({ children }: { children: ReactNode }) => {
         setCurrentImageIndex(newIndex);
       }
     },
-    []
+    [],
   );
 
   const contextValue = useMemo(
@@ -209,7 +209,7 @@ export const ImageDialogProvider = ({ children }: { children: ReactNode }) => {
       currentGallery,
       currentImageIndex,
       isOpen,
-    ]
+    ],
   );
 
   return (

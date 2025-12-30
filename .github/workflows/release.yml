@@ -1,52 +1,52 @@
 name: Release React UI
 
 on:
-    push:
-        tags:
-            - "v*"
+  push:
+    tags:
+      - "v*"
 
 permissions:
-    id-token: write # Required for OIDC
-    contents: read
+  id-token: write # Required for OIDC
+  contents: read
 
 jobs:
-    build-and-publish:
-        runs-on: ubuntu-latest
-        steps:
-            # Checkout code
-            - name: Checkout repo
-              uses: actions/checkout@v4
+  build-and-publish:
+    runs-on: ubuntu-latest
+    steps:
+      # Checkout code
+      - name: Checkout repo
+        uses: actions/checkout@v4
 
-            # Setup pnpm
-            - name: Setup pnpm
-              uses: pnpm/action-setup@v3
-              with:
-                  version: 9
+      # Setup pnpm
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v3
+        with:
+          version: 9
 
-            # Setup Node.js (latest stable)
-            - name: Setup Node.js
-              uses: actions/setup-node@v4
-              with:
-                  node-version: "latest" # Node 24+ ensures npm ≥ 11.5.1
-                  registry-url: "https://registry.npmjs.org"
-                  cache: "pnpm"
+      # Setup Node.js (latest stable)
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "latest" # Node 24+ ensures npm ≥ 11.5.1
+          registry-url: "https://registry.npmjs.org"
+          cache: "pnpm"
 
-            # Ensure npm is up-to-date
-            - name: Upgrade npm
-              run: npm install -g npm@latest
+      # Ensure npm is up-to-date
+      - name: Upgrade npm
+        run: npm install -g npm@latest
 
-            # Install dependencies
-            - name: Install dependencies
-              run: pnpm install --frozen-lockfile
+      # Install dependencies
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
 
-            # Build the project
-            - name: Build
-              run: pnpm build
+      # Build the project
+      - name: Build
+        run: pnpm build
 
-            # Optional: Run tests
-            - name: Run tests
-              run: pnpm test || echo "No tests found"
+      # Optional: Run tests
+      - name: Run tests
+        run: pnpm test || echo "No tests found"
 
-            # Publish to npm using OIDC
-            - name: Publish to npm
-              run: pnpm publish --access public --no-git-checks --provenance
+      # Publish to npm using OIDC
+      - name: Publish to npm
+        run: pnpm publish --access public --no-git-checks --provenance
