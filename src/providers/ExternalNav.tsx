@@ -38,8 +38,7 @@ export function ExternalNavProvider({
   return (
     <ExternalNavContext.Provider value={{ openExternal }}>
       <Dialog open={open} onOpenChange={(v) => (v ? setOpen(true) : cancel())}>
-        {children}
-        <DialogContent>
+        <DialogContent className="dark max-w-md overflow-hidden">
           <DialogTitle>Leaving site</DialogTitle>
           <DialogDescription>
             You are about to open an external site. This will take you off this
