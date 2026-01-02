@@ -37,30 +37,28 @@ export function ExternalNavProvider({
 
   return (
     <ExternalNavContext.Provider value={{ openExternal }}>
+      {/* ⬅️ children are OUTSIDE the Dialog */}
+      {children}
+
       <Dialog open={open} onOpenChange={(v) => (v ? setOpen(true) : cancel())}>
         <DialogContent className="dark max-w-md overflow-hidden">
           <DialogTitle>Leaving site</DialogTitle>
+
           <DialogDescription>
-            You are about to open an external site. This will take you off this
-            page. Continue?
-            <Button
-              className="p-2 mt-4 flex hover:bg-muted/50 bg-muted/20 text-foreground border w-full hover:underline! justify-start"
-              variant="link"
-              size="sm"
-              asChild
-            >
-              {href && (
-                <a
-                  href={href}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  style={{ textDecoration: "none" }}
-                >
-                  {href}
-                </a>
-              )}
-            </Button>
+            You are about to open an external site. Continue?
           </DialogDescription>
+
+          {href && (
+            <a
+              href={href}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="mt-4 block text-sm truncate underline"
+            >
+              {href}
+            </a>
+          )}
+
           <DialogFooter>
             <Button variant="outline" onClick={cancel}>
               Cancel

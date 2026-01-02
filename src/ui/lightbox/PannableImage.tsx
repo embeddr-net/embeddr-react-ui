@@ -220,6 +220,7 @@ export const PannableImage = ({
       e.preventDefault();
       const t1 = e.touches[0];
       const t2 = e.touches[1];
+      if (!t1 || !t2) return;
       const dist = Math.hypot(t1.clientX - t2.clientX, t1.clientY - t2.clientY);
       const midX = (t1.clientX + t2.clientX) / 2;
       const midY = (t1.clientY + t2.clientY) / 2;
@@ -233,6 +234,7 @@ export const PannableImage = ({
       });
     } else if (e.touches.length === 1) {
       const t = e.touches[0];
+      if (!t) return;
       setDragStart({ x: t.clientX, y: t.clientY });
       setIsDragging(true);
     }
@@ -244,9 +246,10 @@ export const PannableImage = ({
         e.preventDefault();
         const t1 = e.touches[0];
         const t2 = e.touches[1];
+        if (!t1 || !t2) return;
         const dist = Math.hypot(
           t1.clientX - t2.clientX,
-          t1.clientY - t2.clientY,
+          t1.clientY - t2.clientY
         );
 
         const scale = dist / touchState.initialDistance;
@@ -264,13 +267,14 @@ export const PannableImage = ({
       } else if (e.touches.length === 1 && isDragging) {
         e.preventDefault(); // Prevent scrolling
         const t = e.touches[0];
+        if (!t) return;
         const dx = t.clientX - dragStart.x;
         const dy = t.clientY - dragStart.y;
         setPan((p) => ({ x: p.x + dx, y: p.y + dy }));
         setDragStart({ x: t.clientX, y: t.clientY });
       }
     },
-    [touchState, isDragging, dragStart],
+    [touchState, isDragging, dragStart]
   );
 
   const handleTouchEnd = useCallback(() => {
@@ -293,7 +297,7 @@ export const PannableImage = ({
         setDragStart({ x: e.clientX, y: e.clientY });
       }
     },
-    [isDragging, dragStart],
+    [isDragging, dragStart]
   );
 
   const handleMouseUp = useCallback(() => {

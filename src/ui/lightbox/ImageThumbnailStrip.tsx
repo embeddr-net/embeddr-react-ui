@@ -28,13 +28,11 @@ export const ImageThumbnailStrip = ({
       const thumbnail = scrollContainerRef.current.children[
         currentIndex
       ] as HTMLElement;
-      if (thumbnail) {
-        thumbnail.scrollIntoView({
-          behavior: "smooth",
-          block: "nearest",
-          inline: "center",
-        });
-      }
+      thumbnail.scrollIntoView({
+        behavior: "smooth",
+        block: "nearest",
+        inline: "center",
+      });
     }
   }, [currentIndex, isOpen]);
 
