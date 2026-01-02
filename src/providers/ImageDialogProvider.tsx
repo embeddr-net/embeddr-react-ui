@@ -223,7 +223,7 @@ export const ImageDialogProvider = ({ children }: { children: ReactNode }) => {
           <VisuallyHidden>
             <DialogTitle>Image Viewer</DialogTitle>
             <DialogDescription>
-              View images in a lightbox gallery!!!
+              View images in a lightbox gallery.
             </DialogDescription>
           </VisuallyHidden>
           <LightboxViewer
