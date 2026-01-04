@@ -126,6 +126,7 @@ export const LightboxViewer = ({
         {imageSrc && (
           <PannableImage
             src={imageSrc}
+            mediaType={currentImage?.media_type === "video" ? "video" : "image"}
             className="w-full h-full"
             isOpen={isOpen}
             actions={pannableActions}
