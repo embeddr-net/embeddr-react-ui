@@ -6,7 +6,7 @@ import { cn } from "../lib/utils";
 import type { VariantProps } from "class-variance-authority";
 
 const buttonVariants = cva(
-  "cursor-pointer focus-visible:border-ring ring-1 ring-foreground/20 hover:ring-foreground/40 focus-visible:ring-ring/50 aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive dark:aria-invalid:border-destructive/50 rounded-none border border-transparent bg-clip-padding text-xs font-medium focus-visible:ring-1 aria-invalid:ring-1 [&_svg:not([class*='size-'])]:size-4 inline-flex items-center justify-center whitespace-nowrap transition-all disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none shrink-0 [&_svg]:shrink-0 outline-none group/button select-none",
+  "cursor-pointer focus-visible:border-ring border border-foreground/20 hover:border-foreground/40 aria-invalid:border-destructive dark:aria-invalid:border-destructive/50 rounded-none bg-clip-padding text-xs font-medium [&_svg:not([class*='size-'])]:size-4 inline-flex items-center justify-center whitespace-nowrap transition-all disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none shrink-0 [&_svg]:shrink-0 outline-none group/button select-none",
   {
     variants: {
       variant: {
@@ -37,7 +37,7 @@ const buttonVariants = cva(
       variant: "default",
       size: "default",
     },
-  },
+  }
 );
 
 function Button({
