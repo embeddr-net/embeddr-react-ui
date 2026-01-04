@@ -88,21 +88,29 @@
       "types": "./dist/ui/*.d.ts",
       "import": "./dist/ui/*.js"
     },
-    "./explorers/*": {
-      "types": "./dist/ui/explorers/*.d.ts",
-      "import": "./dist/ui/explorers/*.js"
+    "./components/lightbox": {
+      "types": "./dist/ui/lightbox/index.d.ts",
+      "import": "./dist/ui/lightbox/index.js"
+    },
+    "./types": {
+      "types": "./dist/types/index.d.ts",
+      "import": "./dist/types/index.js"
+    },
+    "./hooks": {
+      "types": "./dist/hooks/index.d.ts",
+      "import": "./dist/hooks/index.js"
     },
     "./hooks/*": {
       "types": "./dist/hooks/*.d.ts",
       "import": "./dist/hooks/*.js"
     },
+    "./providers": {
+      "types": "./dist/providers/index.d.ts",
+      "import": "./dist/providers/index.js"
+    },
     "./providers/*": {
       "types": "./dist/providers/*.d.ts",
       "import": "./dist/providers/*.js"
-    },
-    "./lib/*": {
-      "types": "./dist/lib/*.d.ts",
-      "import": "./dist/lib/*.js"
     }
   }
 }

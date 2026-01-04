@@ -38,7 +38,23 @@
     "moduleDetection": "force",
     "skipLibCheck": true,
     "allowSyntheticDefaultImports": true,
-    "esModuleInterop": true
+    "esModuleInterop": true,
+    "paths": {
+      "@embeddr/react-ui": ["./src/index.tsx"],
+      "@embeddr/react-ui/*": ["../embeddr-react-ui/src/*"],
+      "@embeddr/react-ui/components/*": [
+        "../embeddr-react-ui/src/components/*"
+      ],
+      "@embeddr/react-ui/hooks": ["../embeddr-react-ui/src/hooks/index.ts"],
+      "@embeddr/react-ui/hooks/*": ["../embeddr-react-ui/src/hooks/*"],
+      "@embeddr/react-ui/providers": [
+        "../embeddr-react-ui/src/providers/index.ts"
+      ],
+      "@embeddr/react-ui/providers/*": ["../embeddr-react-ui/src/providers/*"],
+      "@embeddr/react-ui/ui/*": ["../embeddr-react-ui/src/ui/*"],
+      "@embeddr/react-ui/context/*": ["../embeddr-react-ui/src/context/*"],
+      "@embeddr/react-ui/types/*": ["../embeddr-react-ui/src/types/*"]
+    }
   },
   "include": ["src", "*.ts", "*.d.ts"],
 
