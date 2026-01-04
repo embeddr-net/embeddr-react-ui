@@ -1,15 +1,9 @@
-import {
-  
-  useCallback,
-  useEffect,
-  useRef,
-  useState
-} from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { RotateCcw, RotateCw } from "lucide-react";
 import { Button } from "../button";
-import type {ReactNode} from "react";
+import type { ReactNode } from "react";
 
-interface PannableImageAction {
+export interface PannableImageAction {
   icon: ReactNode;
   label: string;
   onClick: () => void;
@@ -17,6 +11,7 @@ interface PannableImageAction {
 
 interface PannableImageProps {
   src: string;
+  mediaType?: "image" | "video";
   className?: string;
   isOpen?: boolean;
   actions?: Array<PannableImageAction>;
@@ -25,6 +20,7 @@ interface PannableImageProps {
 
 export const PannableImage = ({
   src,
+  mediaType = "image",
   className,
   isOpen,
   actions = [],
@@ -32,7 +28,7 @@ export const PannableImage = ({
 }: PannableImageProps) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
-  const imageRef = useRef<HTMLImageElement | null>(null);
+  const imageRef = useRef<HTMLImageElement | HTMLVideoElement | null>(null);
 
   const [isDragging, setIsDragging] = useState(false);
   const [zoom, setZoom] = useState(1);
@@ -62,10 +58,19 @@ export const PannableImage = ({
     // Calculate fit dimensions
     const r = rotationRef.current;
     const isRotated = (r / 90) % 2 !== 0;
+
+    // Handle video dimensions
+    const naturalWidth =
+      img instanceof HTMLVideoElement ? img.videoWidth : img.width;
+    const naturalHeight =
+      img instanceof HTMLVideoElement ? img.videoHeight : img.height;
+
+    if (!naturalWidth || !naturalHeight) return;
+
     const canvasAspect = canvas.width / canvas.height;
     const imageAspect = isRotated
-      ? img.height / img.width
-      : img.width / img.height;
+      ? naturalHeight / naturalWidth
+      : naturalWidth / naturalHeight;
 
     let fitWidth = canvas.width;
     let fitHeight = canvas.height;
@@ -137,24 +142,75 @@ export const PannableImage = ({
     }
   }, [isOpen, ensureCanvasSize]);
 
-  // Load image
+  // Load image or video
   useEffect(() => {
     setIsImageLoaded(false);
-    const img = new Image();
-    img.src = src;
-    img.onload = () => {
-      imageRef.current = img;
-      setIsImageLoaded(true);
-      // Reset zoom/pan on new image
-      zoomRef.current = 1;
-      setZoom(1);
-      panRef.current = { x: 0, y: 0 };
-      setPan({ x: 0, y: 0 });
-      rotationRef.current = 0;
-      setRotation(0);
-      handleResize();
+
+    // Cleanup previous media
+    if (imageRef.current instanceof HTMLVideoElement) {
+      imageRef.current.pause();
+      imageRef.current.src = "";
+      imageRef.current.load();
+    }
+    imageRef.current = null;
+
+    if (mediaType === "video") {
+      const vid = document.createElement("video");
+      vid.src = src;
+      vid.loop = true;
+      vid.muted = true;
+      vid.playsInline = true;
+      vid.autoplay = true;
+      vid.onloadedmetadata = () => {
+        imageRef.current = vid;
+        setIsImageLoaded(true);
+        // Reset zoom/pan on new media
+        zoomRef.current = 1;
+        setZoom(1);
+        panRef.current = { x: 0, y: 0 };
+        setPan({ x: 0, y: 0 });
+        rotationRef.current = 0;
+        setRotation(0);
+        handleResize();
+        vid.play().catch((e) => console.error("Auto-play failed", e));
+      };
+    } else {
+      const img = new Image();
+      img.src = src;
+      img.onload = () => {
+        imageRef.current = img;
+        setIsImageLoaded(true);
+        // Reset zoom/pan on new image
+        zoomRef.current = 1;
+        setZoom(1);
+        panRef.current = { x: 0, y: 0 };
+        setPan({ x: 0, y: 0 });
+        rotationRef.current = 0;
+        setRotation(0);
+        handleResize();
+      };
+    }
+  }, [src, mediaType, handleResize]);
+
+  // Animation loop for video
+  useEffect(() => {
+    let animationFrameId: number;
+
+    const render = () => {
+      if (mediaType === "video" && isImageLoaded) {
+        drawImage();
+        animationFrameId = requestAnimationFrame(render);
+      }
     };
-  }, [src, handleResize]);
+
+    if (mediaType === "video" && isImageLoaded) {
+      render();
+    }
+
+    return () => {
+      if (animationFrameId) cancelAnimationFrame(animationFrameId);
+    };
+  }, [mediaType, isImageLoaded, drawImage]);
 
   // Setup resize observer and window listener
   useEffect(() => {
@@ -226,6 +282,7 @@ export const PannableImage = ({
       e.preventDefault();
       const t1 = e.touches[0];
       const t2 = e.touches[1];
+      if (!t1 || !t2) return;
       const dist = Math.hypot(t1.clientX - t2.clientX, t1.clientY - t2.clientY);
       const midX = (t1.clientX + t2.clientX) / 2;
       const midY = (t1.clientY + t2.clientY) / 2;
@@ -239,6 +296,7 @@ export const PannableImage = ({
       });
     } else if (e.touches.length === 1) {
       const t = e.touches[0];
+      if (!t) return;
       setDragStart({ x: t.clientX, y: t.clientY });
       setIsDragging(true);
     }
@@ -250,6 +308,7 @@ export const PannableImage = ({
         e.preventDefault();
         const t1 = e.touches[0];
         const t2 = e.touches[1];
+        if (!t1 || !t2) return;
         const dist = Math.hypot(
           t1.clientX - t2.clientX,
           t1.clientY - t2.clientY
@@ -270,6 +329,7 @@ export const PannableImage = ({
       } else if (e.touches.length === 1 && isDragging) {
         e.preventDefault(); // Prevent scrolling
         const t = e.touches[0];
+        if (!t) return;
         const dx = t.clientX - dragStart.x;
         const dy = t.clientY - dragStart.y;
         setPan((p) => ({ x: p.x + dx, y: p.y + dy }));
@@ -344,7 +404,7 @@ export const PannableImage = ({
         onMouseUp={handleMouseUp}
         onMouseLeave={handleMouseUp}
         onDoubleClick={handleDoubleClick}
-        className={`w-[100dvw] h-[100dvh] transition-opacity duration-200 ${
+        className={`w-[100dvw] h-[100dvh] transition-opacity duration-500 ${
           isImageLoaded ? "opacity-100" : "opacity-0"
         } ${isDragging ? "cursor-grabbing" : "cursor-grab"} touch-none`}
       />

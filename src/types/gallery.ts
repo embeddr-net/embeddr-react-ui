@@ -1,4 +1,4 @@
-import type {ReactNode} from "react";
+import type { ReactNode } from "react";
 
 export interface GalleryImage {
   src: string;
@@ -6,6 +6,7 @@ export interface GalleryImage {
   title?: string;
   description?: string;
   metadata?: Record<string, any>; // For custom data like model, prompt, etc.
+  media_type?: "image" | "video"; // To specify if the media is an image or video
 }
 
 export interface Gallery {
