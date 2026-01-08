@@ -1,6 +1,6 @@
 import { createContext, useContext } from "react";
 
-type ExternalNavContextType = {
+export type ExternalNavContextType = {
   openExternal: (url: string) => void;
 };
 

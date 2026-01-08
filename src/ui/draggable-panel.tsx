@@ -371,6 +371,8 @@ export function DraggablePanel({
           handleMouseDown(e);
         }
       }}
+      onMouseEnter={(e) => e.stopPropagation()}
+      onMouseLeave={(e) => e.stopPropagation()}
     >
       {hiddenTitleHandle}
       {showTitle && headerContent}

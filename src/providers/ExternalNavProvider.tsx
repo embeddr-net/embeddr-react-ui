@@ -5,8 +5,8 @@ import {
   DialogDescription,
   DialogFooter,
   DialogTitle,
-} from "../ui/dialog";
-import { Button } from "../ui/button";
+  Button,
+} from "../ui/index";
 import { ExternalNavContext } from "../hooks/useExternalNav";
 
 export function ExternalNavProvider({

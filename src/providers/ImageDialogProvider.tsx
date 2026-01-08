@@ -5,8 +5,8 @@ import {
   DialogContent,
   DialogDescription,
   DialogTitle,
-} from "../ui/dialog";
-import { LightboxViewer } from "../ui/lightbox/LightboxViewer";
+} from "../ui/index";
+import { LightboxViewer } from "../ui/lightbox/index";
 import { ImageDialogContext } from "../context/ImageDialogContext";
 import type { GalleryWithTotal } from "../context/ImageDialogContext";
 import type { ReactNode } from "react";
