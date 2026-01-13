@@ -13,15 +13,7 @@ import {
 } from "@react-three/drei";
 import * as THREE from "three";
 import { Loader2 } from "lucide-react";
-import type { Point3D } from "./types";
-
-export interface SearchQueryMarker {
-  x: number;
-  y: number;
-  z: number;
-  label: string;
-  color?: string;
-}
+import type { Point3D, SearchQueryMarker } from "./types";
 
 export interface ControlledUmap3DProps {
   points: Array<Point3D>;

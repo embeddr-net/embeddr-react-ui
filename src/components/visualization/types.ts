@@ -6,6 +6,14 @@ export interface Point3D {
   [key: string]: any;
 }
 
+export interface SearchQueryMarker {
+  x: number;
+  y: number;
+  z: number;
+  label: string;
+  color?: string;
+}
+
 export interface Explorer3DProps {
   points: Array<Point3D>;
   isLoading?: boolean;
@@ -14,4 +22,5 @@ export interface Explorer3DProps {
   getImageUrl: (point: Point3D, type: "thumb" | "full") => string;
   className?: string;
   count?: number; // Total count if points is a subset
+  isActive?: boolean; // Whether the component controls are active
 }

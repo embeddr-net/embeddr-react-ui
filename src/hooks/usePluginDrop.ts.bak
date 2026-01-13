@@ -1,0 +1,86 @@
+import { useCallback, type DragEvent } from "react";
+import { EmbeddrDnDTypes } from "../lib/dnd";
+
+export interface UsePluginDropOptions {
+  /** Callback when an internal artifact is dropped */
+  onArtifact?: (data: {
+    id: string;
+    type: string;
+    previewUrl?: string;
+    imageUrl?: string;
+    videoUrl?: string;
+  }) => void;
+  /** Callback when external files are dropped */
+  onFiles?: (files: FileList) => void;
+  /** Callback when a URL string is dropped */
+  onUrl?: (url: string) => void;
+  /** Callback when plain text is dropped */
+  onText?: (text: string) => void;
+  /** Whether to stop event propagation (default: true) */
+  stopPropagation?: boolean;
+}
+
+export function usePluginDrop({
+  onArtifact,
+  onFiles,
+  onUrl,
+  onText,
+  stopPropagation = true,
+}: UsePluginDropOptions) {
+  const onDragOver = useCallback(
+    (e: DragEvent) => {
+      e.preventDefault();
+      if (stopPropagation) e.stopPropagation();
+      e.dataTransfer.dropEffect = "copy";
+    },
+    [stopPropagation]
+  );
+
+  const onDrop = useCallback(
+    (e: DragEvent) => {
+      e.preventDefault();
+      if (stopPropagation) e.stopPropagation();
+
+      // 1. Internal Artifacts
+      const artifactId = e.dataTransfer.getData(EmbeddrDnDTypes.ARTIFACT_ID);
+      
+      if (artifactId && onArtifact) {
+        onArtifact({
+          id: artifactId,
+          type: e.dataTransfer.getData(EmbeddrDnDTypes.ARTIFACT_TYPE) || "unknown",
+          previewUrl: e.dataTransfer.getData(EmbeddrDnDTypes.PREVIEW_URL),
+          imageUrl: e.dataTransfer.getData(EmbeddrDnDTypes.IMAGE_URL),
+          videoUrl: e.dataTransfer.getData(EmbeddrDnDTypes.VIDEO_URL),
+        });
+        return;
+      }
+
+      // 2. Files
+      if (e.dataTransfer.files?.length > 0 && onFiles) {
+        onFiles(e.dataTransfer.files);
+        return;
+      }
+
+      // 3. URLs/Text
+      const url = e.dataTransfer.getData("text/uri-list");
+      const text = e.dataTransfer.getData("text/plain");
+
+      if (url && onUrl) {
+        onUrl(url);
+      } else if (text) {
+        if (text.startsWith("http") && onUrl) {
+          onUrl(text);
+        } else if (onText) {
+          onText(text);
+        }
+      }
+    },
+    [onArtifact, onFiles, onUrl, onText, stopPropagation]
+  );
+
+  return {
+    onDragOver,
+    onDrop,
+    isDragging: false, // Could expand with state later
+  };
+}

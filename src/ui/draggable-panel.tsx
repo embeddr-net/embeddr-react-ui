@@ -1,28 +1,35 @@
-import React, { useEffect, useRef, useState } from "react";
-import {
-  ArrowDown,
-  ArrowUp,
-  ChevronDown,
-  ChevronUp,
-  Eye,
-  EyeOff,
-  Pin,
-  PinOff,
-  Settings,
-  X,
-} from "lucide-react";
+import React, { useEffect, useRef, useState, useCallback } from "react";
+import { createPortal } from "react-dom";
 import { cn } from "../lib/utils";
 import { useLocalStorage } from "../hooks/useLocalStorage";
 import { Card } from "./card";
-import { Button } from "./button";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "./dropdown-menu";
+import { PanelHeader } from "./panel/PanelHeader";
+import { ResizeHandle } from "./panel/ResizeHandle";
+
+// --- Context & Hook for Panel State ---
+
+export interface PanelState {
+  id?: string;
+  isActive: boolean;
+  isCollapsed: boolean;
+  isPinned: boolean;
+  isFullscreen: boolean; // Reserved for future
+  title: string;
+  close: () => void;
+  collapse: (collapsed?: boolean) => void;
+  pin: (pinned?: boolean) => void;
+  focus: () => void;
+}
+
+const PanelContext = React.createContext<PanelState | null>(null);
+
+export function usePanel() {
+  const context = React.useContext(PanelContext);
+  if (!context) {
+    throw new Error("usePanel must be used within a DraggablePanel");
+  }
+  return context;
+}
 
 export interface DraggablePanelProps {
   id?: string;
@@ -42,6 +49,7 @@ export interface DraggablePanelProps {
   pinned?: boolean;
   onPinChange?: (pinned: boolean) => void;
   onDragEnd?: () => void;
+  onResizeEnd?: () => void;
   zIndex?: number;
   onFocus?: () => void;
   onMouseDown?: (e: React.MouseEvent) => void;
@@ -49,6 +57,24 @@ export interface DraggablePanelProps {
   onShowTitleChange?: (show: boolean) => void;
   hideHeader?: boolean;
   transparent?: boolean;
+  isActive?: boolean;
+  onMinimize?: () => void;
+  /**
+   * Additional items to be rendered in the settings menu.
+   * Can be used to inject custom actions like "Set as Backdrop".
+   */
+  additionalSettingsItems?: React.ReactNode;
+  /**
+   * @deprecated use additionalSettingsItems
+   */
+  headerEndContent?: React.ReactNode;
+}
+
+interface AnchorState {
+  anchorX: "left" | "right" | "center";
+  anchorY: "top" | "bottom" | "center";
+  offsetX: number;
+  offsetY: number;
 }
 
 export function DraggablePanel({
@@ -72,10 +98,15 @@ export function DraggablePanel({
   zIndex,
   onFocus,
   onMouseDown,
+  onMinimize,
   showTitle: controlledShowTitle,
   onShowTitleChange,
   hideHeader = false,
   transparent = false,
+  isActive = false,
+  headerEndContent,
+  additionalSettingsItems,
+  onResizeEnd,
 }: DraggablePanelProps) {
   // Internal state for uncontrolled mode
   const [internalPosition, setInternalPosition] = useLocalStorage(
@@ -87,16 +118,30 @@ export function DraggablePanel({
     defaultSize
   );
 
+  // Persistent Anchor State
+  const [anchorState, setAnchorState] = useLocalStorage<AnchorState>(
+    id ? `panel-${id}-anchor` : "temp-panel-anchor",
+    {
+      anchorX: "left",
+      anchorY: "top",
+      offsetX: defaultPosition.x,
+      offsetY: defaultPosition.y,
+    }
+  );
+
   const position = controlledPosition || internalPosition;
   const size = controlledSize || internalSize;
 
-  const onPositionChange = (pos: { x: number; y: number }) => {
-    if (controlledOnPositionChange) {
-      controlledOnPositionChange(pos);
-    } else {
-      setInternalPosition(pos);
-    }
-  };
+  const onPositionChange = useCallback(
+    (pos: { x: number; y: number }) => {
+      if (controlledOnPositionChange) {
+        controlledOnPositionChange(pos);
+      } else {
+        setInternalPosition(pos);
+      }
+    },
+    [controlledOnPositionChange, setInternalPosition]
+  );
 
   const onSizeChange = (s: { width: number; height: number }) => {
     if (controlledOnSizeChange) {
@@ -114,7 +159,21 @@ export function DraggablePanel({
   const showTitle = hideHeader
     ? false
     : controlledShowTitle ?? internalShowTitle;
+
   const setShowTitle = (show: boolean) => {
+    // If we're toggling the title, we want the panel to grow/shrink
+    // instead of the content container expanding/contracting to fill a fixed card height.
+    if (show !== showTitle && !isFolded) {
+      const HEADER_HEIGHT = 41;
+      if (show) {
+        onSizeChange({ ...size, height: size.height + HEADER_HEIGHT });
+      } else {
+        onSizeChange({
+          ...size,
+          height: Math.max(minHeight, size.height - HEADER_HEIGHT),
+        });
+      }
+    }
     setInternalShowTitle(show);
     onShowTitleChange?.(show);
   };
@@ -123,6 +182,103 @@ export function DraggablePanel({
   const dragStartRef = useRef({ x: 0, y: 0 });
   const initialPosRef = useRef({ x: 0, y: 0 });
   const initialSizeRef = useRef({ width: 0, height: 0 });
+
+  // Refs for logic that needs current values without re-triggering effects
+  const positionRef = useRef(position);
+  const sizeRef = useRef(size);
+  const anchorStateRef = useRef(anchorState);
+  const isInteractingRef = useRef(false);
+
+  useEffect(() => {
+    positionRef.current = position;
+  }, [position]);
+  useEffect(() => {
+    sizeRef.current = size;
+  }, [size]);
+  useEffect(() => {
+    anchorStateRef.current = anchorState;
+  }, [anchorState]);
+
+  // Sync offsets when position changes externally
+  useEffect(() => {
+    if (isInteractingRef.current) return;
+    if (position) {
+      const currentPos = positionRef.current;
+      const currentSize = sizeRef.current;
+      const currentAnchor = anchorStateRef.current;
+
+      const deltaX = Math.abs(position.x - currentPos.x);
+      const deltaY = Math.abs(position.y - currentPos.y);
+
+      // Only update offsets if significant change (avoiding rounding loops)
+      if (deltaX > 2 || deltaY > 2) {
+        let newOffsetX = position.x;
+        let newOffsetY = position.y;
+        const { innerWidth, innerHeight } = window;
+
+        // X Axis
+        if (currentAnchor.anchorX === "right") {
+          newOffsetX = innerWidth - currentSize.width - position.x;
+        } else if (currentAnchor.anchorX === "center") {
+          newOffsetX = position.x - (innerWidth - currentSize.width) / 2;
+        }
+
+        // Y Axis
+        if (currentAnchor.anchorY === "bottom") {
+          newOffsetY = innerHeight - currentSize.height - position.y;
+        } else if (currentAnchor.anchorY === "center") {
+          newOffsetY = position.y - (innerHeight - currentSize.height) / 2;
+        }
+
+        setAnchorState((prev) => ({
+          ...prev,
+          offsetX: newOffsetX,
+          offsetY: newOffsetY,
+        }));
+      }
+    }
+  }, [position, setAnchorState]); // Depend on position object identity
+
+  // Handle Window Resize - Anchor Logic
+  useEffect(() => {
+    let resizeTimer: any;
+    const handleResize = () => {
+      if (isInteractingRef.current) return;
+
+      const { innerWidth, innerHeight } = window;
+      const { anchorX, anchorY, offsetX, offsetY } = anchorStateRef.current;
+      const { width, height } = sizeRef.current;
+
+      let x = 0;
+      let y = 0;
+
+      if (anchorX === "left") x = offsetX;
+      else if (anchorX === "right") x = innerWidth - width - offsetX;
+      else x = (innerWidth - width) / 2 + offsetX;
+
+      if (anchorY === "top") y = offsetY;
+      else if (anchorY === "bottom") y = innerHeight - height - offsetY;
+      else y = (innerHeight - height) / 2 + offsetY;
+
+      // Ensure basic bounds
+      x = Math.max(0, Math.min(x, innerWidth - width));
+      y = Math.max(0, Math.min(y, innerHeight - height));
+
+      onPositionChange({ x, y });
+
+      if (resizeTimer) clearTimeout(resizeTimer);
+      resizeTimer = setTimeout(() => {
+        // Redundant safe update after resize stops
+        onPositionChange({ x, y });
+      }, 200);
+    };
+
+    window.addEventListener("resize", handleResize);
+    return () => {
+      window.removeEventListener("resize", handleResize);
+      if (resizeTimer) clearTimeout(resizeTimer);
+    };
+  }, [onPositionChange]);
 
   useEffect(() => {
     if (isOpen) {
@@ -155,6 +311,7 @@ export function DraggablePanel({
     }
     e.preventDefault(); // Prevent text selection and other default behaviors
     setIsDragging(true);
+    isInteractingRef.current = true;
     dragStartRef.current = { x: e.clientX, y: e.clientY };
     initialPosRef.current = { ...position };
   };
@@ -181,9 +338,66 @@ export function DraggablePanel({
   const handleResizeStart = (e: React.MouseEvent) => {
     e.stopPropagation();
     onFocus?.();
+    if (pinned) return;
     setIsResizing(true);
+    isInteractingRef.current = true;
     dragStartRef.current = { x: e.clientX, y: e.clientY };
     initialSizeRef.current = { ...size };
+  };
+
+  const handleInteractionEnd = () => {
+    const { innerWidth, innerHeight } = window;
+    const { x, y } = positionRef.current;
+    const { width, height } = sizeRef.current;
+
+    let anchorX: AnchorState["anchorX"] = "left";
+    let offsetX = x;
+    const SNAP = 50;
+
+    if (x < SNAP) {
+      anchorX = "left";
+      offsetX = x;
+    } else if (x > innerWidth - width - SNAP) {
+      anchorX = "right";
+      offsetX = innerWidth - width - x;
+    } else {
+      if (x > innerWidth / 2) {
+        anchorX = "right";
+        offsetX = innerWidth - width - x;
+      } else {
+        anchorX = "left";
+        offsetX = x;
+      }
+    }
+
+    let anchorY: AnchorState["anchorY"] = "top";
+    let offsetY = y;
+
+    if (y < SNAP) {
+      anchorY = "top";
+      offsetY = y;
+    } else if (y > innerHeight - height - SNAP) {
+      anchorY = "bottom";
+      offsetY = innerHeight - height - y;
+    } else {
+      // Middle of screen logic could be improved, but defaults to top/bottom
+      if (y > innerHeight / 2) {
+        anchorY = "bottom";
+        offsetY = innerHeight - height - y;
+      } else {
+        anchorY = "top";
+        offsetY = y;
+      }
+    }
+
+    setAnchorState({
+      anchorX,
+      anchorY,
+      offsetX,
+      offsetY,
+    });
+
+    isInteractingRef.current = false;
   };
 
   useEffect(() => {
@@ -201,7 +415,7 @@ export function DraggablePanel({
         const dy = e.clientY - dragStartRef.current.y;
 
         onSizeChange({
-          width: Math.max(minWidth, initialSizeRef.current.width + dx),
+          width: Math.max(minWidth, initialSizeRef.current.width + dx), // Keep minWidth
           height: Math.max(minHeight, initialSizeRef.current.height + dy),
         });
       }
@@ -210,19 +424,27 @@ export function DraggablePanel({
     const handleMouseUp = () => {
       if (isDragging) {
         onDragEnd?.();
+        handleInteractionEnd();
+      }
+      if (isResizing) {
+        onResizeEnd?.();
+        handleInteractionEnd();
       }
       setIsDragging(false);
       setIsResizing(false);
+      // isInteractingRef.current set to false in handleInteractionEnd
     };
 
     if (isDragging || isResizing) {
       window.addEventListener("mousemove", handleMouseMove);
       window.addEventListener("mouseup", handleMouseUp);
+      document.body.classList.add("embeddr-panel-interacting");
     }
 
     return () => {
       window.removeEventListener("mousemove", handleMouseMove);
       window.removeEventListener("mouseup", handleMouseUp);
+      document.body.classList.remove("embeddr-panel-interacting");
     };
   }, [
     isDragging,
@@ -232,104 +454,25 @@ export function DraggablePanel({
     onPositionChange,
     onSizeChange,
     onDragEnd,
+    onResizeEnd,
   ]);
 
   if (!isOpen) return null;
 
-  const headerContent = (
-    <div
-      className={cn(
-        "flex items-center justify-between p-2 border-b select-none shrink-0 bg-muted/50",
-        pinned ? "cursor-default" : "cursor-move",
-        titlePosition === "bottom" && "border-t border-b-0"
-      )}
-      onMouseDown={handleMouseDown}
-      onContextMenu={(e) => {
-        e.preventDefault();
-        setShowTitle(true);
-      }}
-    >
-      <div className="font-medium text-sm px-2 flex items-center gap-2">
-        {title}
-      </div>
-      <div className="flex items-center gap-1">
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="icon-sm" className="h-6 w-6">
-              <Settings className="h-3 w-3" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="z-[100]">
-            <DropdownMenuLabel>Panel Settings</DropdownMenuLabel>
-            <DropdownMenuSeparator />
-            {onPinChange && (
-              <DropdownMenuItem onClick={() => onPinChange(!pinned)}>
-                {pinned ? (
-                  <>
-                    <PinOff className="mr-2 h-4 w-4" /> Unpin
-                  </>
-                ) : (
-                  <>
-                    <Pin className="mr-2 h-4 w-4" /> Pin
-                  </>
-                )}
-              </DropdownMenuItem>
-            )}
-            <DropdownMenuItem
-              onClick={() =>
-                setTitlePosition(titlePosition === "top" ? "bottom" : "top")
-              }
-            >
-              {titlePosition === "top" ? (
-                <>
-                  <ArrowDown className="mr-2 h-4 w-4" /> Title Bottom
-                </>
-              ) : (
-                <>
-                  <ArrowUp className="mr-2 h-4 w-4" /> Title Top
-                </>
-              )}
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => setShowTitle(false)}>
-              <EyeOff className="mr-2 h-4 w-4" /> Hide Title
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
-
-        <Button
-          variant="ghost"
-          size="icon-sm"
-          className="h-6 w-6"
-          onClick={toggleFold}
-        >
-          {isFolded ? (
-            titlePosition === "top" ? (
-              <ChevronDown className="h-4 w-4" />
-            ) : (
-              <ChevronUp className="h-4 w-4" />
-            )
-          ) : titlePosition === "top" ? (
-            <ChevronUp className="h-4 w-4" />
-          ) : (
-            <ChevronDown className="h-4 w-4" />
-          )}
-        </Button>
-
-        <Button
-          variant="ghost"
-          size="icon-sm"
-          className="h-6 w-6"
-          onClick={onClose}
-        >
-          <X className="h-4 w-4" />
-        </Button>
-      </div>
-    </div>
-  );
+  const contextValue: PanelState = {
+    id,
+    isActive,
+    isCollapsed: isFolded,
+    isPinned: !!pinned,
+    isFullscreen: false,
+    title,
+    close: onClose,
+    collapse: (v) => setIsFolded(v ?? !isFolded),
+    pin: (v) => onPinChange?.(v ?? !pinned),
+    focus: () => onFocus?.(),
+  };
 
   // If title is hidden, we show a small drag handle on hover or right click area
-  // If hideHeader is true, we still want this handle if the user needs a way to drag without clicking the content
-  // But if the content is fully interactive (like a button), this top strip is the ONLY way to drag.
   const hiddenTitleHandle = (!showTitle || hideHeader) && (
     <div
       className={cn(
@@ -351,7 +494,8 @@ export function DraggablePanel({
     <Card
       ref={panelRef}
       className={cn(
-        "fixed flex shadow-xl border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 transition-colors  duration-200",
+        "select-none fixed flex shadow-xl border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 transition-colors duration-200 rounded-none!",
+        "focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:border-1 focus-visible:border-primary/30",
         transparent &&
           "bg-transparent border-none shadow-none backdrop-blur-none",
         titlePosition === "bottom" ? "flex-col-reverse" : "flex-col",
@@ -367,37 +511,76 @@ export function DraggablePanel({
       onMouseDown={(e) => {
         onFocus?.();
         onMouseDown?.(e);
+
+        // Auto-focus panel on click to handle global focus management
+        // (unless clicking an input/interactive element)
+        const target = e.target as HTMLElement;
+        const isInteractive = target.closest(
+          'input, textarea, select, button, [contenteditable="true"]'
+        );
+        if (!isInteractive) {
+          panelRef.current?.focus();
+        }
+
         if (hideHeader) {
           handleMouseDown(e);
         }
       }}
       onMouseEnter={(e) => e.stopPropagation()}
       onMouseLeave={(e) => e.stopPropagation()}
+      tabIndex={-1}
     >
       {hiddenTitleHandle}
-      {showTitle && headerContent}
+
+      {showTitle && !hideHeader && (
+        <PanelHeader
+          title={title}
+          pinned={!!pinned}
+          titlePosition={titlePosition}
+          showTitle={showTitle}
+          isFolded={isFolded}
+          transparent={transparent}
+          additionalSettingsItems={additionalSettingsItems || headerEndContent}
+          onPinChange={onPinChange}
+          onTitlePositionChange={setTitlePosition}
+          onShowTitleChange={setShowTitle}
+          onMinimize={onMinimize}
+          onFoldToggle={toggleFold}
+          onClose={onClose}
+          onMouseDown={handleMouseDown}
+        />
+      )}
 
       {/* Content */}
       {!isFolded && (
-        <div className="flex-1 min-h-0 overflow-hidden relative">
-          {children}
+        <div className="flex-1 min-h-0 overflow-hidden relative flex flex-col">
+          <PanelContext.Provider value={contextValue}>
+            {children}
+          </PanelContext.Provider>
         </div>
       )}
 
       {/* Resize Handle */}
       {!isFolded && (
-        <div
-          className={cn(
-            "absolute bottom-0 right-0 w-4 h-4 cursor-se-resize resize-handle flex items-center justify-center z-50",
-            transparent
-              ? "opacity-0 hover:opacity-100"
-              : "opacity-50 hover:opacity-100"
-          )}
+        <ResizeHandle
+          transparent={transparent}
           onMouseDown={handleResizeStart}
-        >
-          <div className="w-2 h-2 border-r-2 border-b-2 border-foreground/50" />
-        </div>
+        />
       )}
+
+      {/* Global Interaction Shield - Prevents jitter from other elements reacting to mouse while dragging/resizing */}
+      {(isDragging || isResizing) &&
+        typeof document !== "undefined" &&
+        createPortal(
+          <div
+            className="fixed inset-0 z-[99999] pointer-events-auto select-none overflow-hidden"
+            style={{
+              cursor: isDragging ? "move" : "nwse-resize",
+              backgroundColor: "transparent",
+            }}
+          />,
+          document.body
+        )}
     </Card>
   );
 }

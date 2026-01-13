@@ -1,21 +1,18 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import {
-  Canvas,
-  useFrame,
-  useThree,
-  type ThreeEvent,
-} from "@react-three/fiber";
-import { OrbitControls } from "@react-three/drei";
+import { Canvas, useFrame, useThree } from "@react-three/fiber";
+import type { ThreeEvent } from "@react-three/fiber";
+import { Html, OrbitControls } from "@react-three/drei";
 import * as THREE from "three";
 import {
   ExternalLinkIcon,
   EyeIcon,
+  ImageIcon,
+  Loader2,
   ScatterChart,
   X,
-  Loader2,
 } from "lucide-react";
 import { Button } from "../../ui/button";
-import type { Explorer3DProps, Point3D } from "./types";
+import type { Explorer3DProps, Point3D, SearchQueryMarker } from "./types";
 
 // Helper to extract coordinates safely
 const getCoordinates = (point: Point3D): [number, number, number] => {
@@ -39,6 +36,8 @@ const PointCloud = ({
   points,
   onHover,
   onClick,
+  size = 0.15,
+  opacity = 0.8,
 }: {
   points: Array<Point3D>;
   onHover: (index: number | null, point: Point3D | null) => void;
@@ -47,6 +46,8 @@ const PointCloud = ({
     point: Point3D,
     event: ThreeEvent<MouseEvent>
   ) => void;
+  size?: number;
+  opacity?: number;
 }) => {
   const meshRef = useRef<THREE.Points>(null);
   const hoverRef = useRef<number | null>(null);
@@ -71,20 +72,23 @@ const PointCloud = ({
     for (let i = 0; i < points.length; i++) {
       const p = points[i];
       if (!p) continue;
-      const [x, y, z] = getCoordinates(p);
 
-      // Map position to color (normalization might be needed depending on scale)
-      // Assuming coordinates are somewhat centered around 0 and within -10 to 10 range approximately
-      // We normalize to 0-1 for color
-      const nx = x / 20 + 0.5;
-      const ny = y / 20 + 0.5;
-      const nz = z / 20 + 0.5;
+      // Use explicit color if available
+      if (p.color) {
+        color.set(p.color);
+      } else {
+        // Fallback: Map position to color
+        const [x, y, z] = getCoordinates(p);
+        const nx = x / 20 + 0.5;
+        const ny = y / 20 + 0.5;
+        const nz = z / 20 + 0.5;
+        color.setRGB(
+          Math.max(0, Math.min(1, nx)),
+          Math.max(0, Math.min(1, ny)),
+          Math.max(0, Math.min(1, nz))
+        );
+      }
 
-      color.setRGB(
-        Math.max(0, Math.min(1, nx)),
-        Math.max(0, Math.min(1, ny)),
-        Math.max(0, Math.min(1, nz))
-      );
       cols[i * 3] = color.r;
       cols[i * 3 + 1] = color.g;
       cols[i * 3 + 2] = color.b;
@@ -142,23 +146,166 @@ const PointCloud = ({
         />
       </bufferGeometry>
       <pointsMaterial
-        size={0.15}
+        size={size}
         vertexColors
         sizeAttenuation
         transparent
-        opacity={0.8}
+        opacity={opacity}
       />
     </points>
   );
 };
 
-const HighlightPoint = ({ point }: { point: Point3D | null }) => {
+const ImageSprite = ({
+  point,
+  getImageUrl,
+  onClick,
+  size = 0.5,
+}: {
+  point: Point3D;
+  getImageUrl: (p: Point3D, t: "thumb" | "full") => string;
+  onClick?: (point: Point3D) => void;
+  size?: number;
+}) => {
+  const [texture, setTexture] = useState<THREE.Texture | null>(null);
+  const url = getImageUrl(point, "thumb");
+
+  useEffect(() => {
+    let active = true;
+    const loader = new THREE.TextureLoader();
+    loader.load(
+      url,
+      (tex) => {
+        if (active) {
+          tex.minFilter = THREE.LinearFilter;
+          tex.generateMipmaps = false; // Performance optimization for many small textures
+          setTexture(tex);
+        }
+      },
+      undefined,
+      (err) => {
+        if (active) {
+          console.warn(`Failed to load thumbnail for ${point.id}:`, err);
+        }
+      }
+    );
+    return () => {
+      active = false;
+    };
+  }, [url, point.id]);
+
+  if (!texture) return null;
+
+  const [x, y, z] = getCoordinates(point);
+
+  // Calculate aspect ratio preserving scale
+  let scaleX = size;
+  let scaleY = size;
+
+  // Cast to any to avoid TS errors
+  const img = texture.image as any;
+
+  if (img && img.width && img.height) {
+    const aspect = img.width / img.height;
+    if (aspect > 1) {
+      // Landscape: Width is fast, Height is scaled down
+      scaleY = size / aspect;
+    } else {
+      // Portrait: Height is fast, Width is scaled down
+      scaleX = size * aspect;
+    }
+  }
+
+  return (
+    <sprite
+      position={[x, y, z]}
+      scale={[scaleX, scaleY, 1]}
+      onClick={(e) => {
+        e.stopPropagation();
+        onClick?.(point);
+      }}
+    >
+      <spriteMaterial
+        map={texture}
+        transparent={true}
+        opacity={1.0}
+        alphaTest={0.1}
+      />
+    </sprite>
+  );
+};
+
+const ImageNodes = ({
+  points,
+  getImageUrl,
+  onClick,
+  size,
+}: {
+  points: Array<Point3D>;
+  getImageUrl: (p: Point3D, t: "thumb" | "full") => string;
+  onClick?: (point: Point3D) => void;
+  size: number;
+}) => {
+  const imagePoints = useMemo(() => {
+    return points.filter((p) => {
+      if (!p) return false;
+      const ap = p as any;
+      // Markers aren't images
+      if (ap.isMarker || ap.isQuery) return false;
+
+      // Get type from various possible locations
+      const type = (
+        ap.artifact_type ||
+        ap.type ||
+        ap.metadata?.type ||
+        ""
+      ).toLowerCase();
+
+      // Explicitly block non-visual types
+      if (
+        type.includes("folder") ||
+        type.includes("collection") ||
+        type.includes("directory") ||
+        type.includes("container")
+      ) {
+        return false;
+      }
+
+      // If it has an ID, we try to render it.
+      // The backend handles the actual image check.
+      // This ensures "Artifact" types that are actually images still show up.
+      return !!ap.id;
+    });
+  }, [points]);
+
+  return (
+    <group>
+      {imagePoints.map((p) => (
+        <ImageSprite
+          key={p.id}
+          point={p}
+          getImageUrl={getImageUrl}
+          onClick={onClick}
+          size={size * 2.0}
+        />
+      ))}
+    </group>
+  );
+};
+
+const HighlightPoint = ({
+  point,
+  size = 0.15,
+}: {
+  point: Point3D | null;
+  size?: number;
+}) => {
   if (!point) return null;
   const pos = getCoordinates(point);
 
   return (
     <mesh position={pos}>
-      <sphereGeometry args={[0.15, 16, 16]} />
+      <sphereGeometry args={[size, 16, 16]} />
       <meshStandardMaterial
         color="#ff00ff"
         emissive="#ff00ff"
@@ -173,9 +320,11 @@ const HighlightPoint = ({ point }: { point: Point3D | null }) => {
 const SelectedPoints = ({
   points,
   selectedIndices,
+  size = 0.15,
 }: {
   points: Array<Point3D>;
   selectedIndices: Array<number>;
+  size?: number;
 }) => {
   if (!points || selectedIndices.length === 0) return null;
 
@@ -188,7 +337,7 @@ const SelectedPoints = ({
 
         return (
           <mesh key={idx} position={pos}>
-            <sphereGeometry args={[0.15, 16, 16]} />
+            <sphereGeometry args={[size, 16, 16]} />
             <meshStandardMaterial
               color="#00ffff"
               emissive="#00ffff"
@@ -203,20 +352,43 @@ const SelectedPoints = ({
   );
 };
 
+const QueryMarker = ({ marker }: { marker: SearchQueryMarker }) => {
+  return (
+    <group position={[marker.x, marker.y, marker.z]}>
+      <mesh>
+        <sphereGeometry args={[0.3, 16, 16]} />
+        <meshStandardMaterial
+          color={marker.color || "#ffffff"}
+          emissive={marker.color || "#ffffff"}
+          emissiveIntensity={2}
+        />
+      </mesh>
+      <Html position={[0, 0.5, 0]} center zIndexRange={[100, 0]}>
+        <div className="bg-black/80 text-white text-xs px-2 py-1 rounded border border-white/20 whitespace-nowrap backdrop-blur-md pointer-events-none font-medium shadow-lg">
+          {marker.label}
+        </div>
+      </Html>
+    </group>
+  );
+};
+
 const CameraController = ({
   controlsRef,
   targetPoint,
+  isActive = true,
 }: {
   controlsRef: React.RefObject<any>;
   targetPoint: THREE.Vector3 | null;
+  isActive?: boolean;
 }) => {
   const { camera } = useThree();
   const [keys, setKeys] = useState<Record<string, boolean>>({});
   const isAnimating = useRef(false);
 
   useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) =>
-      setKeys((k) => ({ ...k, [e.code]: true }));
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (isActive) setKeys((k) => ({ ...k, [e.code]: true }));
+    };
     const handleKeyUp = (e: KeyboardEvent) =>
       setKeys((k) => ({ ...k, [e.code]: false }));
     window.addEventListener("keydown", handleKeyDown);
@@ -225,7 +397,7 @@ const CameraController = ({
       window.removeEventListener("keydown", handleKeyDown);
       window.removeEventListener("keyup", handleKeyUp);
     };
-  }, []);
+  }, [isActive]);
 
   useFrame((state, delta) => {
     if (!controlsRef.current) return;
@@ -245,7 +417,7 @@ const CameraController = ({
     }
 
     // Manual controls override animation if keys are pressed
-    const hasInput = Object.values(keys).some((k) => k);
+    const hasInput = isActive && Object.values(keys).some((k) => k);
     if (hasInput) {
       isAnimating.current = false;
       const speed = (keys["ShiftLeft"] || keys["ShiftRight"] ? 20 : 8) * delta;
@@ -257,14 +429,23 @@ const CameraController = ({
 
       const move = new THREE.Vector3();
 
-      if (keys["KeyW"] || keys["ArrowUp"]) move.add(forward);
-      if (keys["KeyS"] || keys["ArrowDown"]) move.sub(forward);
-      if (keys["KeyA"] || keys["ArrowLeft"]) move.sub(right);
-      if (keys["KeyD"] || keys["ArrowRight"]) move.add(right);
+      if (
+        document.activeElement &&
+        (document.activeElement.tagName === "INPUT" ||
+          document.activeElement.tagName === "TEXTAREA" ||
+          document.activeElement.tagName === "SELECT")
+      ) {
+        // Ignore input when tying
+      } else {
+        if (keys["KeyW"] || keys["ArrowUp"]) move.add(forward);
+        if (keys["KeyS"] || keys["ArrowDown"]) move.sub(forward);
+        if (keys["KeyA"] || keys["ArrowLeft"]) move.sub(right);
+        if (keys["KeyD"] || keys["ArrowRight"]) move.add(right);
 
-      // Q/E for vertical movement
-      if (keys["KeyQ"]) move.y += 1;
-      if (keys["KeyE"]) move.y -= 1;
+        // Q/E for vertical movement
+        if (keys["KeyQ"]) move.y += 1;
+        if (keys["KeyE"]) move.y -= 1;
+      }
 
       if (move.lengthSq() > 0) {
         move.normalize().multiplyScalar(speed);
@@ -277,6 +458,134 @@ const CameraController = ({
   return null;
 };
 
+const ConnectionLines = ({
+  points,
+  connections,
+  highlightedConnection,
+}: {
+  points: Array<Point3D>;
+  connections?: Array<{
+    startId: string | number;
+    endId: string | number;
+    color?: string;
+  }>;
+  highlightedConnection?: {
+    startId: string | number;
+    endId: string | number;
+  } | null;
+}) => {
+  if (!connections || connections.length === 0) return null;
+
+  const { lines, highlightedLine } = useMemo(() => {
+    const pointMap = new Map();
+    points.forEach((p) => pointMap.set(p.id, p));
+
+    // Create geometry for lines
+    const vertices: number[] = [];
+    const colors: number[] = [];
+
+    // Geometry for highlight
+    const highlightVertices: number[] = [];
+    const highlightColors: number[] = [];
+
+    const tempColor = new THREE.Color();
+
+    connections.forEach((c) => {
+      const start = pointMap.get(c.startId);
+      const end = pointMap.get(c.endId);
+      if (start && end) {
+        const [sx, sy, sz] = getCoordinates(start);
+        const [ex, ey, ez] = getCoordinates(end);
+
+        const isHighlighted =
+          highlightedConnection &&
+          ((highlightedConnection.startId === c.startId &&
+            highlightedConnection.endId === c.endId) ||
+            (highlightedConnection.startId === c.endId &&
+              highlightedConnection.endId === c.startId)); // Bidirectional check
+
+        if (isHighlighted) {
+          highlightVertices.push(sx, sy, sz, ex, ey, ez);
+          highlightColors.push(1, 1, 1, 1, 1, 1); // Pure white for highlight
+        } else {
+          vertices.push(sx, sy, sz, ex, ey, ez);
+          // Color handling
+          if (c.color) tempColor.set(c.color);
+          else tempColor.set(1, 1, 1);
+
+          colors.push(tempColor.r, tempColor.g, tempColor.b);
+          colors.push(tempColor.r, tempColor.g, tempColor.b);
+        }
+      }
+    });
+
+    return {
+      lines: {
+        vertices: new Float32Array(vertices),
+        colors: new Float32Array(colors),
+      },
+      highlightedLine: {
+        vertices: new Float32Array(highlightVertices),
+        colors: new Float32Array(highlightColors),
+      },
+    };
+  }, [points, connections, highlightedConnection]);
+
+  return (
+    <group>
+      {/* Normal Lines */}
+      {lines.vertices.length > 0 && (
+        <lineSegments key={`lines-${connections.length}`}>
+          <bufferGeometry>
+            <bufferAttribute
+              attach="attributes-position"
+              count={lines.vertices.length / 3}
+              array={lines.vertices}
+              itemSize={3}
+              args={[lines.vertices, 3]}
+            />
+            <bufferAttribute
+              attach="attributes-color"
+              count={lines.colors.length / 3}
+              array={lines.colors}
+              itemSize={3}
+              args={[lines.colors, 3]}
+            />
+          </bufferGeometry>
+          <lineBasicMaterial
+            vertexColors
+            transparent
+            opacity={0.4}
+            linewidth={1}
+          />
+        </lineSegments>
+      )}
+
+      {/* Highlighted Lines (Thicker/Brighter) */}
+      {highlightedLine.vertices.length > 0 && (
+        <lineSegments renderOrder={1}>
+          <bufferGeometry>
+            <bufferAttribute
+              attach="attributes-position"
+              count={highlightedLine.vertices.length / 3}
+              array={highlightedLine.vertices}
+              itemSize={3}
+              args={[highlightedLine.vertices, 3]}
+            />
+          </bufferGeometry>
+          {/* Note: lineWidth doesn't always work in WebGL, but we can try opacity/color pop */}
+          <lineBasicMaterial
+            color="white"
+            opacity={1.0}
+            linewidth={3}
+            depthTest={false}
+          />
+        </lineSegments>
+      )}
+    </group>
+  );
+};
+
 export const Umap3DExplorer = ({
   points = [],
   isLoading = false,
@@ -285,10 +594,88 @@ export const Umap3DExplorer = ({
   getImageUrl,
   className,
   count,
-}: Explorer3DProps) => {
+  showDefaultOverlay = true,
+  connections = [],
+  pointSize = 0.15,
+  selectedPointId,
+  highlightedConnection,
+  searchMarkers = [],
+  isActive = true,
+}: Explorer3DProps & {
+  isActive?: boolean;
+  showDefaultOverlay?: boolean;
+  connections?: any[];
+  pointSize?: number;
+  selectedPointId?: string | number | null;
+  searchMarkers?: SearchQueryMarker[];
+  highlightedConnection?: {
+    startId: string | number;
+    endId: string | number;
+  } | null;
+}) => {
   const [hoveredPoint, setHoveredPoint] = useState<Point3D | null>(null);
   const [selectedIndices, setSelectedIndices] = useState<Array<number>>([]);
   const [cameraTarget, setCameraTarget] = useState<THREE.Vector3 | null>(null);
+  const [showImages, setShowImages] = useState(false);
+  const lastPointsLengthRef = useRef(0);
+
+  // Unified selection and auto-centering logic
+  useEffect(() => {
+    if (!points || points.length === 0 || !controlsRef.current) {
+      lastPointsLengthRef.current = points?.length || 0;
+      return;
+    }
+
+    // 1. Handle selection focus (Priority)
+    if (selectedPointId !== undefined && selectedPointId !== null) {
+      const index = points.findIndex((p) => p.id === selectedPointId);
+      if (index !== -1) {
+        const p = points[index];
+        if (!p) return;
+        const [x, y, z] = getCoordinates(p);
+        setSelectedIndices([index]);
+        setCameraTarget(new THREE.Vector3(x, y, z));
+        lastPointsLengthRef.current = points.length;
+        return; // Selection wins over centroid
+      }
+    } else {
+      if (selectedIndices.length > 0) setSelectedIndices([]);
+    }
+
+    // 2. Handle initial/dramatic centroid re-centering
+    const isInitial = lastPointsLengthRef.current === 0;
+    const isMajorShift =
+      Math.abs(points.length - lastPointsLengthRef.current) >
+      lastPointsLengthRef.current * 0.4;
+
+    if (isInitial || isMajorShift) {
+      let sumX = 0,
+        sumY = 0,
+        sumZ = 0,
+        validCount = 0;
+      for (const p of points) {
+        if (!p) continue;
+        const [x, y, z] = getCoordinates(p);
+        sumX += x;
+        sumY += y;
+        sumZ += z;
+        validCount++;
+      }
+
+      if (validCount > 0) {
+        setCameraTarget(
+          new THREE.Vector3(
+            sumX / validCount,
+            sumY / validCount,
+            sumZ / validCount
+          )
+        );
+      }
+    }
+
+    lastPointsLengthRef.current = points.length;
+  }, [selectedPointId, points]);
+
   const controlsRef = useRef<any>(null);
 
   const handlePointClick = (
@@ -296,18 +683,7 @@ export const Umap3DExplorer = ({
     point: Point3D,
     event?: ThreeEvent<MouseEvent>
   ) => {
-    // If Ctrl/Cmd click, center camera
-    if (event && (event.ctrlKey || event.metaKey)) {
-      const [x, y, z] = getCoordinates(point);
-      const target = new THREE.Vector3(x, y, z);
-      setCameraTarget(target);
-      // Also select it
-      setSelectedIndices([index]);
-      if (onPointSelect) onPointSelect(point);
-      return;
-    }
-
-    // Normal click: Select point
+    // Normal click: Select point (CameraController will lerp smoothly)
     setSelectedIndices([index]);
     if (onPointSelect) onPointSelect(point);
   };
@@ -392,27 +768,88 @@ export const Umap3DExplorer = ({
         <CameraController
           controlsRef={controlsRef}
           targetPoint={cameraTarget}
+          isActive={isActive}
         />
 
         <PointCloud
           points={points}
           onHover={(_, point) => setHoveredPoint(point)}
           onClick={handlePointClick}
+          size={showImages ? pointSize * 0.5 : pointSize}
+          opacity={showImages ? 0.3 : 0.8}
         />
 
-        <HighlightPoint point={hoveredPoint} />
-        <SelectedPoints points={points} selectedIndices={selectedIndices} />
+        {showImages && points.length <= 5000 && (
+          <ImageNodes
+            points={points}
+            getImageUrl={getImageUrl}
+            onClick={(p) => {
+              const idx = points.findIndex((pt) => pt.id === p.id);
+              if (idx !== -1) handlePointClick(idx, p);
+            }}
+            size={pointSize}
+          />
+        )}
+
+        <HighlightPoint point={hoveredPoint} size={pointSize} />
+        <SelectedPoints
+          points={points}
+          selectedIndices={selectedIndices}
+          size={pointSize}
+        />
+        <ConnectionLines
+          points={points}
+          connections={connections}
+          highlightedConnection={highlightedConnection}
+        />
+        {searchMarkers.map((m, i) => (
+          <QueryMarker key={i} marker={m} />
+        ))}
       </Canvas>
 
-      <div className="absolute top-4 left-4 pointer-events-none">
-        <div className="bg-black/50 backdrop-blur text-white px-3 py-1 text-xs border border-white/10 rounded">
+      <div className="absolute top-4 left-4 flex gap-2 pointer-events-none">
+        <div className="bg-black/50 backdrop-blur text-white px-3 py-1 text-xs border border-white/10 rounded flex items-center h-8">
           {count ? count.toLocaleString() : points.length.toLocaleString()}{" "}
           points
         </div>
+        <Button
+          variant="outline"
+          size="sm"
+          className={`pointer-events-auto h-8 gap-2 bg-black/50 backdrop-blur border-white/10 text-white hover:bg-black/70 ${
+            showImages ? "ring-1 ring-primary" : ""
+          }`}
+          onClick={() => setShowImages(!showImages)}
+          title={
+            points.length > 5000
+              ? "Too many points to show images"
+              : "Toggle image thumbnails"
+          }
+          disabled={points.length > 5000}
+        >
+          <ImageIcon className="w-4 h-4" />
+          <span className="text-[10px] uppercase font-bold">
+            {showImages ? "Hide Images" : "View Images"}
+          </span>
+        </Button>
       </div>
 
-      {/* Selected info with full image (Bottom Left) */}
-      {selectedPoint && selectedIndex !== undefined && (
+      {/* Target Clear Indicator */}
+      {cameraTarget && (
+        <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-20 pointer-events-auto">
+          <div className="bg-black/80 backdrop-blur text-white px-3 py-1 text-xs border border-white/20 rounded-full flex items-center gap-2 shadow-xl">
+            <span>Camera Locked</span>
+            <button
+              onClick={() => setCameraTarget(null)}
+              className="hover:bg-white/20 rounded-full p-0.5"
+            >
+              <X className="w-3 h-3" />
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Selected info with full image (Bottom Left) - Default Overlay */}
+      {showDefaultOverlay && selectedPoint && selectedIndex !== undefined && (
         <div className="absolute bottom-4 left-4 z-10 ring-2 ring-foreground/10 overflow-hidden shadow-lg max-w-sm rounded bg-card">
           <div
             className="cursor-pointer relative ring-1 ring-foreground/10 hover:ring-2"

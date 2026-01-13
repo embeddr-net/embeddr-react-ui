@@ -10,10 +10,12 @@ function ScrollArea({
   children,
   viewportRef,
   variant = "default",
+  orientation = "vertical",
   ...props
 }: React.ComponentProps<typeof ScrollAreaPrimitive.Root> & {
   viewportRef?: React.RefObject<HTMLDivElement | null>;
   variant?: "default" | "left-border";
+  orientation?: "vertical" | "horizontal" | "both";
 }) {
   return (
     <ScrollAreaPrimitive.Root
@@ -29,7 +31,12 @@ function ScrollArea({
         {children}
       </ScrollAreaPrimitive.Viewport>
 
-      <ScrollBar variant={variant} />
+      {(orientation === "vertical" || orientation === "both") && (
+        <ScrollBar variant={variant} orientation="vertical" />
+      )}
+      {(orientation === "horizontal" || orientation === "both") && (
+        <ScrollBar variant={variant} orientation="horizontal" />
+      )}
       <ScrollAreaPrimitive.Corner />
     </ScrollAreaPrimitive.Root>
   );
@@ -51,10 +58,15 @@ function ScrollBar({
       data-slot="scroll-area-scrollbar"
       orientation={orientation}
       className={cn(
-        "flex touch-none  transition-colors select-none   bg-card border  border-foreground/10",
+        "flex touch-none  transition-colors select-none border   bg-card  border-foreground/10",
         orientation === "vertical" && "h-full w-2.5 ",
         orientation === "horizontal" && "h-2.5 flex-col ",
-        variant === "left-border" && "border-r-0! border-t-0! border-b-0!",
+        variant === "left-border" &&
+          orientation === "vertical" &&
+          "border-r-0! border-t-0! border-b-0!",
+        variant === "left-border" &&
+          orientation === "horizontal" &&
+          "border-0! border-t-1! border-l-0!",
         className
       )}
       {...props}

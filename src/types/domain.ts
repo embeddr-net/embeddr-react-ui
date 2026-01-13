@@ -1,5 +1,5 @@
 export interface PromptImage {
-  id: number;
+  id: number | string;
   url: string;
   image_url: string; // Added for compatibility
   thumb_url?: string; // Added for compatibility
@@ -35,7 +35,9 @@ export interface PromptImage {
   parents?: Array<PromptImage>;
   children?: Array<PromptImage>;
   phash?: string | null;
+  sha256?: string | null;
   is_archived?: boolean;
+  updated_at?: string;
 }
 
 export interface Workflow {

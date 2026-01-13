@@ -2,6 +2,22 @@ import type React from "react";
 import type { Generation, PromptImage, Workflow } from "./domain";
 import type { EmbeddrMessage } from "./websocket";
 
+/**
+ * Known plugin intents that can be registered.
+ * Mirrors embeddr-core/src/embeddr_core/plugin_interface.py
+ */
+export const PluginIntents = {
+  REGISTER_API: "register_api",
+  REGISTER_CLI: "register_cli",
+  REGISTER_CAPABILITY: "register_capability",
+  REGISTER_ARTIFACT_TYPE: "register_artifact_type",
+  ZEN_PANEL: "zen_panel",
+  EVENT_LISTENER: "event_listener",
+  DATABASE_ACCESS: "database_access",
+  EXECUTION_HANDLER: "execution_handler",
+  DRAG_DROP_TARGET: "drag_drop_target",
+} as const;
+
 export interface EmbeddrEventMap {
   // Global App Events
   "image:selected": PromptImage | null;
@@ -144,6 +160,16 @@ export interface EmbeddrAPI {
      */
     getPluginUrl: (path: string) => string;
   };
+  client: {
+    plugins: {
+      call: <T = any>(
+        pluginId: string,
+        path: string,
+        method: string,
+        body?: any
+      ) => Promise<T>;
+    };
+  };
   /**
    * Event bus for inter-plugin communication.
    */
@@ -219,6 +245,10 @@ export interface EmbeddrAPI {
       schedulers: Array<string>;
     }>;
   };
+  windows: {
+    open: (id: string, title: string, componentId: string, props?: any) => void;
+    register: (id: string, component: React.ComponentType<any>) => void;
+  };
 }
 
 // --- Plugin Definition ---
@@ -263,6 +293,11 @@ export interface PluginDefinition {
    * Configuration settings to expose in the Settings Dialog.
    */
   settings?: Array<PluginSettingDef>;
+
+  /**
+   * Backend intents (optional, populated by loader)
+   */
+  intents?: Array<string>;
 }
 
 /**
