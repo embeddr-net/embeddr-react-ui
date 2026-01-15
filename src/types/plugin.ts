@@ -127,6 +127,27 @@ export interface EmbeddrAPI {
     isPanelActive: (panelId: string) => boolean;
   };
   /**
+   * Application settings and preferences.
+   */
+  settings: {
+    /**
+     * Get a global setting value.
+     */
+    get: <T = any>(key: string, defaultValue?: T) => T;
+    /**
+     * Set a global setting value.
+     */
+    set: (key: string, value: any) => void;
+    /**
+     * Get a plugin-specific setting value.
+     */
+    getPlugin: <T = any>(pluginId: string, key: string, defaultValue?: T) => T;
+    /**
+     * Set a plugin-specific setting value.
+     */
+    setPlugin: (pluginId: string, key: string, value: any) => void;
+  };
+  /**
    * Toast notification system.
    */
   toast: {
@@ -247,6 +268,7 @@ export interface EmbeddrAPI {
   };
   windows: {
     open: (id: string, title: string, componentId: string, props?: any) => void;
+    spawn: (componentId: string, title: string, props?: any) => string;
     register: (id: string, component: React.ComponentType<any>) => void;
   };
 }
