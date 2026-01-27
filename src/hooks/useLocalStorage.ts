@@ -1,14 +1,16 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 export function useLocalStorage<T>(key: string, initialValue: T) {
   // Get from local storage then
   // parse stored json or if none return initialValue
+  const lastSerializedRef = useRef<string | null>(null);
   const [storedValue, setStoredValue] = useState<T>(() => {
     if (typeof window === "undefined") {
       return initialValue;
     }
     try {
       const item = window.localStorage.getItem(key);
+      lastSerializedRef.current = item;
       return item ? JSON.parse(item) : initialValue;
     } catch (error) {
       console.log(error);
@@ -23,11 +25,16 @@ export function useLocalStorage<T>(key: string, initialValue: T) {
       // Allow value to be a function so we have same API as useState
       const valueToStore =
         value instanceof Function ? value(storedValue) : value;
+      const serialized = JSON.stringify(valueToStore);
       // Save state
       setStoredValue(valueToStore);
       // Save to local storage
       if (typeof window !== "undefined") {
-        window.localStorage.setItem(key, JSON.stringify(valueToStore));
+        window.localStorage.setItem(key, serialized);
+        lastSerializedRef.current = serialized;
+        window.dispatchEvent(
+          new CustomEvent("local-storage-update", { detail: { key } }),
+        );
         window.dispatchEvent(new Event("local-storage"));
       }
     } catch (error) {
@@ -36,9 +43,19 @@ export function useLocalStorage<T>(key: string, initialValue: T) {
   };
 
   useEffect(() => {
-    const handleStorageChange = () => {
+    const handleStorageChange = (event: Event) => {
+      if (
+        event.type === "local-storage-update" &&
+        (event as CustomEvent).detail?.key !== key
+      ) {
+        return;
+      }
       try {
         const item = window.localStorage.getItem(key);
+        if (item === lastSerializedRef.current) {
+          return;
+        }
+        lastSerializedRef.current = item;
         setStoredValue(item ? JSON.parse(item) : initialValue);
       } catch (error) {
         console.log(error);
@@ -46,10 +63,10 @@ export function useLocalStorage<T>(key: string, initialValue: T) {
     };
 
     window.addEventListener("storage", handleStorageChange);
-    window.addEventListener("local-storage", handleStorageChange);
+    window.addEventListener("local-storage-update", handleStorageChange);
     return () => {
       window.removeEventListener("storage", handleStorageChange);
-      window.removeEventListener("local-storage", handleStorageChange);
+      window.removeEventListener("local-storage-update", handleStorageChange);
     };
   }, [key, initialValue]);
 

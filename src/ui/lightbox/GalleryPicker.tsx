@@ -1,6 +1,6 @@
 import { ChevronDown, ChevronUp } from "lucide-react";
 import { useState } from "react";
-import { useImageDialog } from "@embeddr/react-ui/hooks";
+import { useImageDialog } from "@embeddr/react-ui";
 import type { Gallery } from "@embeddr/react-ui/types/gallery";
 
 interface GalleryPickerProps {

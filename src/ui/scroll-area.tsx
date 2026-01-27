@@ -9,11 +9,13 @@ function ScrollArea({
   className,
   children,
   viewportRef,
+  viewportClassName,
   variant = "default",
   orientation = "vertical",
   ...props
 }: React.ComponentProps<typeof ScrollAreaPrimitive.Root> & {
   viewportRef?: React.RefObject<HTMLDivElement | null>;
+  viewportClassName?: string;
   variant?: "default" | "left-border";
   orientation?: "vertical" | "horizontal" | "both";
 }) {
@@ -26,7 +28,10 @@ function ScrollArea({
       <ScrollAreaPrimitive.Viewport
         data-slot="scroll-area-viewport"
         ref={viewportRef}
-        className="size-full focus-visible:ring-ring/50 transition-[color,box-shadow]"
+        className={cn(
+          "size-full focus-visible:ring-ring/50 transition-[color,box-shadow]",
+          viewportClassName,
+        )}
       >
         {children}
       </ScrollAreaPrimitive.Viewport>
@@ -42,8 +47,9 @@ function ScrollArea({
   );
 }
 
-interface ScrollBarProps
-  extends React.ComponentProps<typeof ScrollAreaPrimitive.ScrollAreaScrollbar> {
+interface ScrollBarProps extends React.ComponentProps<
+  typeof ScrollAreaPrimitive.ScrollAreaScrollbar
+> {
   variant?: "default" | "left-border";
 }
 
@@ -58,7 +64,7 @@ function ScrollBar({
       data-slot="scroll-area-scrollbar"
       orientation={orientation}
       className={cn(
-        "flex touch-none  transition-colors select-none border   bg-card  border-foreground/10",
+        "flex touch-none  transition-colors select-none border   bg-card  border-foreground/10 rounded-md",
         orientation === "vertical" && "h-full w-2.5 ",
         orientation === "horizontal" && "h-2.5 flex-col ",
         variant === "left-border" &&
@@ -67,13 +73,13 @@ function ScrollBar({
         variant === "left-border" &&
           orientation === "horizontal" &&
           "border-0! border-t-1! border-l-0!",
-        className
+        className,
       )}
       {...props}
     >
       <ScrollAreaPrimitive.ScrollAreaThumb
         data-slot="scroll-area-thumb"
-        className="cursor-pointer hover:bg-primary/20 bg-border relative flex-1  hover:ring-foreground/40 rounded-none border border-transparent bg-clip-padding"
+        className="cursor-pointer hover:bg-primary/20 bg-border relative flex-1  hover:ring-foreground/40 rounded-md border border-transparent bg-clip-padding"
       />
     </ScrollAreaPrimitive.ScrollAreaScrollbar>
   );

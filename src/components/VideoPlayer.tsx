@@ -143,8 +143,8 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
     <div
       ref={containerRef}
       className={cn(
-        "group relative bg-muted overflow-hidden flex items-center justify-center border",
-        className
+        "group relative bg-card overflow-hidden flex items-center justify-center border-none",
+        className,
       )}
       onMouseEnter={() => {
         setIsHovering(true);
@@ -159,10 +159,10 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
         ref={videoRef}
         src={src}
         poster={poster}
-        className={cn("w-full h-full", {
-          "object-contain": objectFit === "contain",
-          "object-cover": objectFit === "cover",
-          "object-fill": objectFit === "fill", // Tailwind might not have object-fill by default, but it's valid CSS
+        className={cn("block", {
+          "w-full h-full object-cover": objectFit === "cover",
+          "w-full h-full object-fill": objectFit === "fill",
+          "w-full h-full object-contain": objectFit === "contain",
         })}
         loop={loop}
         playsInline
@@ -178,18 +178,18 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
       {/* Loading Spinner */}
       {isLoading && (
         <div className="absolute inset-0 flex items-center justify-center bg-black/50 pointer-events-none z-10">
-          <Loader2 className="w-8 h-8 animate-spin text-white/80" />
+          <Loader2 className="w-8 h-8 animate-spin text-primary/80" />
         </div>
       )}
 
       {/* Big Play Button Overlay (only when paused and not loading) */}
       {!isPlaying && !isLoading && (
         <div
-          className="absolute inset-0 flex items-center justify-center bg-black/10 cursor-pointer z-10 group/overlay"
+          className="absolute inset-0 flex items-center justify-center bg-card/10 cursor-pointer z-10 group/overlay"
           onClick={togglePlay}
         >
-          <div className="w-14 h-10  bg-black/60 border border-white/10 backdrop-blur-md flex items-center justify-center group-hover/overlay:bg-black/80 group-hover/overlay:scale-110 transition-all duration-300 shadow-xl">
-            <Play className="w-5 h-5 text-white ml-0.5" fill="white" />
+          <div className="w-14 h-10  bg-card/60 border border-white/10 backdrop-blur-md flex items-center justify-center group-hover/overlay:bg-black/80 group-hover/overlay:scale-110 transition-all duration-300 shadow-xl rounded">
+            <Play className="w-5 h-5 text-foreground fill-primary ml-0.5" />
           </div>
         </div>
       )}
@@ -199,7 +199,7 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
         <div
           className={cn(
             "absolute bottom-0 left-0 right-0  p-1 transition-opacity duration-300 z-20 flex flex-col gap-1 ",
-            showControls || !isPlaying ? "opacity-100" : "opacity-0"
+            showControls || !isPlaying ? "opacity-100" : "opacity-0",
           )}
         >
           {/* Top Row: Buttons */}
@@ -207,13 +207,19 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
             <div className="flex items-center gap-1">
               <Button
                 variant="ghost"
-                className=" aspect-square shrink-0 text-white hover:text-white hover:bg-white/20 "
+                className=" aspect-square shrink-0 text-foreground hover:text-foreground hover:bg-white/20 "
                 onClick={togglePlay}
               >
                 {isPlaying ? (
-                  <Pause size="icon-lg" className=" fill-white" />
+                  <Pause
+                    size="icon-lg"
+                    className="text-foreground fill-primary"
+                  />
                 ) : (
-                  <Play size="icon-lg" className=" fill-white" />
+                  <Play
+                    size="icon-lg"
+                    className="text-foreground fill-primary"
+                  />
                 )}
               </Button>
 
@@ -221,7 +227,7 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="w-8 h-8 shrink-0 text-white hover:text-white hover:bg-white/20 "
+                  className="w-8 h-8 shrink-0 text-foreground hover:text-foreground hover:bg-white/20 "
                   onClick={toggleMute}
                 >
                   {isMuted || volume === 0 ? (
@@ -249,7 +255,7 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
             <Button
               variant="ghost"
               size="icon"
-              className="w-8 h-8 shrink-0 text-white hover:text-white hover:bg-white/20 "
+              className="w-8 h-8 shrink-0 text-foreground hover:text-foreground hover:bg-white/20 "
               onClick={handleFullscreen}
             >
               <Maximize className="w-4 h-4" />

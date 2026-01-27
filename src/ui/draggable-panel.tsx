@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState, useCallback } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { cn } from "../lib/utils";
 import { useLocalStorage } from "../hooks/useLocalStorage";
@@ -34,6 +34,7 @@ export function usePanel() {
 export interface DraggablePanelProps {
   id?: string;
   title: string;
+  titleIcon?: React.ReactNode;
   children: React.ReactNode;
   isOpen: boolean;
   onClose: () => void;
@@ -59,10 +60,6 @@ export interface DraggablePanelProps {
   transparent?: boolean;
   isActive?: boolean;
   onMinimize?: () => void;
-  /**
-   * Additional items to be rendered in the settings menu.
-   * Can be used to inject custom actions like "Set as Backdrop".
-   */
   additionalSettingsItems?: React.ReactNode;
   /**
    * @deprecated use additionalSettingsItems
@@ -80,6 +77,7 @@ interface AnchorState {
 export function DraggablePanel({
   id,
   title,
+  titleIcon,
   children,
   isOpen,
   onClose,
@@ -111,12 +109,16 @@ export function DraggablePanel({
   // Internal state for uncontrolled mode
   const [internalPosition, setInternalPosition] = useLocalStorage(
     id ? `panel-${id}-position` : "temp-panel-position",
-    defaultPosition
+    defaultPosition,
   );
   const [internalSize, setInternalSize] = useLocalStorage(
     id ? `panel-${id}-size` : "temp-panel-size",
-    defaultSize
+    defaultSize,
   );
+
+  // NOTE: 'position' now physically represents the Title Header's Top-Left coordinate.
+  // This simplifies folding logic (no position jumping needed) but requires
+  // visual correction during render for bottom-title panels.
 
   // Persistent Anchor State
   const [anchorState, setAnchorState] = useLocalStorage<AnchorState>(
@@ -126,7 +128,7 @@ export function DraggablePanel({
       anchorY: "top",
       offsetX: defaultPosition.x,
       offsetY: defaultPosition.y,
-    }
+    },
   );
 
   const position = controlledPosition || internalPosition;
@@ -140,7 +142,7 @@ export function DraggablePanel({
         setInternalPosition(pos);
       }
     },
-    [controlledOnPositionChange, setInternalPosition]
+    [controlledOnPositionChange, setInternalPosition],
   );
 
   const onSizeChange = (s: { width: number; height: number }) => {
@@ -150,30 +152,29 @@ export function DraggablePanel({
       setInternalSize(s);
     }
   };
+
   const [isDragging, setIsDragging] = useState(false);
   const [isResizing, setIsResizing] = useState(false);
-  const [isFolded, setIsFolded] = useState(false);
-  const [titlePosition, setTitlePosition] = useState<"top" | "bottom">("top");
-  const [internalShowTitle, setInternalShowTitle] = useState(true);
+  const [isFolded, setIsFolded] = useLocalStorage(
+    id ? `panel-${id}-folded` : "temp-panel-folded",
+    false,
+  );
+  const [titlePosition, setTitlePosition] = useLocalStorage<"top" | "bottom">(
+    id ? `panel-${id}-title-position` : "temp-panel-title-position",
+    "top",
+  );
+  const [internalShowTitle, setInternalShowTitle] = useLocalStorage(
+    id ? `panel-${id}-show-title` : "temp-panel-show-title",
+    true,
+  );
 
   const showTitle = hideHeader
     ? false
-    : controlledShowTitle ?? internalShowTitle;
+    : (controlledShowTitle ?? internalShowTitle);
+
+  const headerHeight = hideHeader || !showTitle ? 16 : 41;
 
   const setShowTitle = (show: boolean) => {
-    // If we're toggling the title, we want the panel to grow/shrink
-    // instead of the content container expanding/contracting to fill a fixed card height.
-    if (show !== showTitle && !isFolded) {
-      const HEADER_HEIGHT = 41;
-      if (show) {
-        onSizeChange({ ...size, height: size.height + HEADER_HEIGHT });
-      } else {
-        onSizeChange({
-          ...size,
-          height: Math.max(minHeight, size.height - HEADER_HEIGHT),
-        });
-      }
-    }
     setInternalShowTitle(show);
     onShowTitleChange?.(show);
   };
@@ -200,54 +201,47 @@ export function DraggablePanel({
   }, [anchorState]);
 
   // Sync offsets when position changes externally
+  // NOTE: Logic assumes position refers to the Header Top-Left
   useEffect(() => {
     if (isInteractingRef.current) return;
-    if (position) {
-      const currentPos = positionRef.current;
-      const currentSize = sizeRef.current;
-      const currentAnchor = anchorStateRef.current;
+    const { x, y } = positionRef.current;
+    // We update anchor offsets based on current position
+    // To avoid loops, you might want to check delta, but typically safe if consistent.
+    const { innerWidth, innerHeight } = window;
+    const { anchorX, anchorY } = anchorStateRef.current;
+    const { width } = sizeRef.current;
 
-      const deltaX = Math.abs(position.x - currentPos.x);
-      const deltaY = Math.abs(position.y - currentPos.y);
+    let newOffsetX = x;
+    let newOffsetY = y;
 
-      // Only update offsets if significant change (avoiding rounding loops)
-      if (deltaX > 2 || deltaY > 2) {
-        let newOffsetX = position.x;
-        let newOffsetY = position.y;
-        const { innerWidth, innerHeight } = window;
+    if (anchorX === "right") newOffsetX = innerWidth - width - x;
+    else if (anchorX === "center") newOffsetX = x - (innerWidth - width) / 2;
 
-        // X Axis
-        if (currentAnchor.anchorX === "right") {
-          newOffsetX = innerWidth - currentSize.width - position.x;
-        } else if (currentAnchor.anchorX === "center") {
-          newOffsetX = position.x - (innerWidth - currentSize.width) / 2;
-        }
+    if (anchorY === "bottom") newOffsetY = innerHeight - y;
+    else if (anchorY === "center") newOffsetY = y - innerHeight / 2;
 
-        // Y Axis
-        if (currentAnchor.anchorY === "bottom") {
-          newOffsetY = innerHeight - currentSize.height - position.y;
-        } else if (currentAnchor.anchorY === "center") {
-          newOffsetY = position.y - (innerHeight - currentSize.height) / 2;
-        }
-
-        setAnchorState((prev) => ({
-          ...prev,
-          offsetX: newOffsetX,
-          offsetY: newOffsetY,
-        }));
-      }
+    // Only update if changed effectively to reduce render cycles
+    const prev = anchorStateRef.current;
+    if (
+      Math.abs(prev.offsetX - newOffsetX) > 2 ||
+      Math.abs(prev.offsetY - newOffsetY) > 2
+    ) {
+      setAnchorState((p) => ({
+        ...p,
+        offsetX: newOffsetX,
+        offsetY: newOffsetY,
+      }));
     }
-  }, [position, setAnchorState]); // Depend on position object identity
+  }, [position, size.width, size.height, setAnchorState]);
 
   // Handle Window Resize - Anchor Logic
   useEffect(() => {
-    let resizeTimer: any;
     const handleResize = () => {
       if (isInteractingRef.current) return;
 
       const { innerWidth, innerHeight } = window;
       const { anchorX, anchorY, offsetX, offsetY } = anchorStateRef.current;
-      const { width, height } = sizeRef.current;
+      const { width } = sizeRef.current;
 
       let x = 0;
       let y = 0;
@@ -257,83 +251,70 @@ export function DraggablePanel({
       else x = (innerWidth - width) / 2 + offsetX;
 
       if (anchorY === "top") y = offsetY;
-      else if (anchorY === "bottom") y = innerHeight - height - offsetY;
-      else y = (innerHeight - height) / 2 + offsetY;
+      else if (anchorY === "bottom") y = innerHeight - offsetY;
+      else y = innerHeight / 2 + offsetY;
 
-      // Ensure basic bounds
+      // Ensure basic bounds (header stays on screen)
       x = Math.max(0, Math.min(x, innerWidth - width));
-      y = Math.max(0, Math.min(y, innerHeight - height));
+      y = Math.max(0, Math.min(y, innerHeight - headerHeight));
 
       onPositionChange({ x, y });
-
-      if (resizeTimer) clearTimeout(resizeTimer);
-      resizeTimer = setTimeout(() => {
-        // Redundant safe update after resize stops
-        onPositionChange({ x, y });
-      }, 200);
     };
 
     window.addEventListener("resize", handleResize);
-    return () => {
-      window.removeEventListener("resize", handleResize);
-      if (resizeTimer) clearTimeout(resizeTimer);
-    };
-  }, [onPositionChange]);
+    return () => window.removeEventListener("resize", handleResize);
+  }, [onPositionChange, headerHeight]);
 
   useEffect(() => {
     if (isOpen) {
-      // Ensure panel is within viewport when opened
+      // Ensure panel header is within viewport when opened
       const { innerWidth, innerHeight } = window;
       onPositionChange({
         x: Math.min(Math.max(0, position.x), innerWidth - size.width),
-        y: Math.min(Math.max(0, position.y), innerHeight - size.height),
+        y: Math.min(Math.max(0, position.y), innerHeight - headerHeight),
       });
     }
   }, [isOpen]);
 
-  const handleMouseDown = (e: React.MouseEvent) => {
-    onFocus?.();
-    if (pinned) return;
-    const target = e.target as HTMLElement;
-    if (
-      target instanceof HTMLButtonElement ||
-      target instanceof HTMLInputElement ||
-      target instanceof HTMLTextAreaElement ||
-      target instanceof HTMLSelectElement ||
-      target.closest("button") ||
-      target.closest("input") ||
-      target.closest("textarea") ||
-      target.closest("select") ||
-      target.closest(".resize-handle") ||
-      target.closest(".no-drag")
-    ) {
-      return;
-    }
-    e.preventDefault(); // Prevent text selection and other default behaviors
-    setIsDragging(true);
-    isInteractingRef.current = true;
-    dragStartRef.current = { x: e.clientX, y: e.clientY };
-    initialPosRef.current = { ...position };
-  };
+  const handleMouseDown = useCallback(
+    (e: React.MouseEvent) => {
+      onFocus?.();
+      if (pinned || e.button !== 0) return;
 
-  const toggleFold = () => {
-    const newFolded = !isFolded;
-    setIsFolded(newFolded);
-
-    if (titlePosition === "bottom") {
-      // Estimate header height (p-2 = 8px*2 + h-6 = 24px + border = ~41px)
-      const HEADER_HEIGHT = 41;
-      const delta = size.height - HEADER_HEIGHT;
-
-      if (newFolded) {
-        // Folding: Move top DOWN so bottom stays fixed
-        onPositionChange({ ...position, y: position.y + delta });
-      } else {
-        // Unfolding: Move top UP so bottom stays fixed
-        onPositionChange({ ...position, y: position.y - delta });
+      const target = e.target as HTMLElement;
+      if (
+        target.closest(
+          "button, input, textarea, select, .resize-handle, .no-drag",
+        )
+      ) {
+        return;
       }
-    }
-  };
+
+      dragStartRef.current = { x: e.clientX, y: e.clientY };
+      initialPosRef.current = { ...positionRef.current };
+
+      const handleInitialMove = (moveEvent: MouseEvent) => {
+        const dx = Math.abs(moveEvent.clientX - dragStartRef.current.x);
+        const dy = Math.abs(moveEvent.clientY - dragStartRef.current.y);
+
+        if (dx > 3 || dy > 3) {
+          setIsDragging(true);
+          isInteractingRef.current = true;
+          window.removeEventListener("mousemove", handleInitialMove);
+          window.removeEventListener("mouseup", handleInitialUp);
+        }
+      };
+
+      const handleInitialUp = () => {
+        window.removeEventListener("mousemove", handleInitialMove);
+        window.removeEventListener("mouseup", handleInitialUp);
+      };
+
+      window.addEventListener("mousemove", handleInitialMove);
+      window.addEventListener("mouseup", handleInitialUp);
+    },
+    [pinned, onFocus],
+  );
 
   const handleResizeStart = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -342,14 +323,14 @@ export function DraggablePanel({
     setIsResizing(true);
     isInteractingRef.current = true;
     dragStartRef.current = { x: e.clientX, y: e.clientY };
-    initialSizeRef.current = { ...size };
+    initialSizeRef.current = { ...sizeRef.current };
   };
 
   const handleInteractionEnd = () => {
     const { innerWidth, innerHeight } = window;
     const { x, y } = positionRef.current;
-    const { width, height } = sizeRef.current;
 
+    // Auto-Anchor Logic
     let anchorX: AnchorState["anchorX"] = "left";
     let offsetX = x;
     const SNAP = 50;
@@ -357,17 +338,15 @@ export function DraggablePanel({
     if (x < SNAP) {
       anchorX = "left";
       offsetX = x;
-    } else if (x > innerWidth - width - SNAP) {
+    } else if (x > innerWidth - sizeRef.current.width - SNAP) {
       anchorX = "right";
-      offsetX = innerWidth - width - x;
+      offsetX = innerWidth - sizeRef.current.width - x;
+    } else if (x > innerWidth / 2) {
+      anchorX = "right";
+      offsetX = innerWidth - sizeRef.current.width - x;
     } else {
-      if (x > innerWidth / 2) {
-        anchorX = "right";
-        offsetX = innerWidth - width - x;
-      } else {
-        anchorX = "left";
-        offsetX = x;
-      }
+      anchorX = "left";
+      offsetX = x;
     }
 
     let anchorY: AnchorState["anchorY"] = "top";
@@ -376,27 +355,22 @@ export function DraggablePanel({
     if (y < SNAP) {
       anchorY = "top";
       offsetY = y;
-    } else if (y > innerHeight - height - SNAP) {
+    } else if (y > innerHeight - headerHeight - SNAP) {
+      // Near bottom edge
       anchorY = "bottom";
-      offsetY = innerHeight - height - y;
+      offsetY = innerHeight - y;
     } else {
-      // Middle of screen logic could be improved, but defaults to top/bottom
+      // Just split screen vertically
       if (y > innerHeight / 2) {
         anchorY = "bottom";
-        offsetY = innerHeight - height - y;
+        offsetY = innerHeight - y;
       } else {
         anchorY = "top";
         offsetY = y;
       }
     }
 
-    setAnchorState({
-      anchorX,
-      anchorY,
-      offsetX,
-      offsetY,
-    });
-
+    setAnchorState({ anchorX, anchorY, offsetX, offsetY });
     isInteractingRef.current = false;
   };
 
@@ -415,7 +389,7 @@ export function DraggablePanel({
         const dy = e.clientY - dragStartRef.current.y;
 
         onSizeChange({
-          width: Math.max(minWidth, initialSizeRef.current.width + dx), // Keep minWidth
+          width: Math.max(minWidth, initialSizeRef.current.width + dx),
           height: Math.max(minHeight, initialSizeRef.current.height + dy),
         });
       }
@@ -432,7 +406,6 @@ export function DraggablePanel({
       }
       setIsDragging(false);
       setIsResizing(false);
-      // isInteractingRef.current set to false in handleInteractionEnd
     };
 
     if (isDragging || isResizing) {
@@ -459,6 +432,14 @@ export function DraggablePanel({
 
   if (!isOpen) return null;
 
+  // KEY FIX: Calculate visual top.
+  // If title is bottom AND we are NOT folded (so content is visible),
+  // we shift the DIV up so the header lands at `position.y`.
+  const visualY =
+    !isFolded && titlePosition === "bottom"
+      ? position.y - (size.height - headerHeight)
+      : position.y;
+
   const contextValue: PanelState = {
     id,
     isActive,
@@ -472,57 +453,62 @@ export function DraggablePanel({
     focus: () => onFocus?.(),
   };
 
-  // If title is hidden, we show a small drag handle on hover or right click area
   const hiddenTitleHandle = (!showTitle || hideHeader) && (
     <div
       className={cn(
         "absolute top-0 left-0 right-0 h-3 z-50 cursor-move transition-colors",
-        !transparent && "hover:bg-primary/20"
+        !transparent && "hover:bg-primary/20",
+        isFolded && "h-4 bg-primary/10",
       )}
       onMouseDown={handleMouseDown}
+      onDoubleClick={() => {
+        if (!hideHeader) setShowTitle(true);
+        setIsFolded(!isFolded);
+      }}
       onContextMenu={(e) => {
+        // Always allow showing context menu if header is missing but not legally disabled
         if (!hideHeader) {
           e.preventDefault();
+          // Directly show title on right-click
           setShowTitle(true);
         }
       }}
-      title={hideHeader ? "Drag to move" : "Right click to show title"}
+      title="Drag to move | Double-click to fold | Right-click to show Header"
     />
   );
 
   return (
-    <Card
+    <div
       ref={panelRef}
       className={cn(
-        "select-none fixed flex shadow-xl border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 transition-colors duration-200 rounded-none!",
-        "focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:border-1 focus-visible:border-primary/30",
+        "select-none fixed flex shadow-xl border bg-background/95 backdrop-blur supports-backdrop-filter:bg-background/60 transition-colors duration-200 rounded-lg overflow-hidden",
+        "focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:border focus-visible:border-primary/30",
         transparent &&
           "bg-transparent border-none shadow-none backdrop-blur-none",
         titlePosition === "bottom" ? "flex-col-reverse" : "flex-col",
-        className
+        className,
       )}
       style={{
         left: position.x,
-        top: position.y,
+        top: visualY,
         width: size.width,
         height: isFolded ? "auto" : size.height,
         zIndex: zIndex ?? 50,
+        minHeight: isFolded && (!showTitle || hideHeader) ? "1rem" : undefined,
       }}
       onMouseDown={(e) => {
         onFocus?.();
         onMouseDown?.(e);
 
-        // Auto-focus panel on click to handle global focus management
-        // (unless clicking an input/interactive element)
         const target = e.target as HTMLElement;
         const isInteractive = target.closest(
-          'input, textarea, select, button, [contenteditable="true"]'
+          'input, textarea, select, button, [contenteditable="true"]',
         );
         if (!isInteractive) {
           panelRef.current?.focus();
         }
 
-        if (hideHeader) {
+        if (hideHeader && target === e.currentTarget) {
           handleMouseDown(e);
         }
       }}
@@ -535,6 +521,7 @@ export function DraggablePanel({
       {showTitle && !hideHeader && (
         <PanelHeader
           title={title}
+          titleIcon={titleIcon}
           pinned={!!pinned}
           titlePosition={titlePosition}
           showTitle={showTitle}
@@ -545,7 +532,7 @@ export function DraggablePanel({
           onTitlePositionChange={setTitlePosition}
           onShowTitleChange={setShowTitle}
           onMinimize={onMinimize}
-          onFoldToggle={toggleFold}
+          onFoldToggle={() => setIsFolded(!isFolded)}
           onClose={onClose}
           onMouseDown={handleMouseDown}
         />
@@ -568,19 +555,19 @@ export function DraggablePanel({
         />
       )}
 
-      {/* Global Interaction Shield - Prevents jitter from other elements reacting to mouse while dragging/resizing */}
+      {/* Global Interaction Shield */}
       {(isDragging || isResizing) &&
         typeof document !== "undefined" &&
         createPortal(
           <div
-            className="fixed inset-0 z-[99999] pointer-events-auto select-none overflow-hidden"
+            className="fixed inset-0 z-99999 pointer-events-auto select-none overflow-hidden"
             style={{
               cursor: isDragging ? "move" : "nwse-resize",
               backgroundColor: "transparent",
             }}
           />,
-          document.body
+          document.body,
         )}
-    </Card>
+    </div>
   );
 }

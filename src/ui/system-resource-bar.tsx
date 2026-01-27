@@ -24,7 +24,7 @@ import {
   ContextMenuItem,
   ContextMenuTrigger,
 } from "./context-menu";
-import { useEmbeddrAPI } from "../context/EmbeddrContext";
+import { useOptionalEmbeddrAPI } from "../context/EmbeddrContext";
 
 interface ManagedResource {
   id: string;
@@ -50,17 +50,11 @@ export const SystemResourceBar: React.FC<{
   variant?: "default" | "compact";
 }> = ({
   className,
-  pollingInterval = 3000,
-  totalVRAM = 24 * 1024 * 1024 * 1024,
+  pollingInterval = 30000,
+  totalVRAM = 32 * 1024 * 1024 * 1024,
   variant = "default",
 }) => {
-  const api = React.useMemo(() => {
-    try {
-      return useEmbeddrAPI();
-    } catch (e) {
-      return null;
-    }
-  }, []);
+  const api = useOptionalEmbeddrAPI();
 
   const [state, setState] = useState<ResourceState>({
     resources: [],
@@ -68,7 +62,7 @@ export const SystemResourceBar: React.FC<{
   });
   const [isLoading, setIsLoading] = useState(true);
   const [selectedResourceId, setSelectedResourceId] = useState<string | null>(
-    null
+    null,
   );
 
   const getBaseUrl = () => {
@@ -101,11 +95,11 @@ export const SystemResourceBar: React.FC<{
       const baseUrl = getBaseUrl();
       await fetch(
         `${baseUrl}/api/v2/system/resources/unload?resource_id=${encodeURIComponent(
-          id
+          id,
         )}`,
         {
           method: "POST",
-        }
+        },
       );
       fetchResources();
     } catch (error) {
@@ -176,7 +170,7 @@ export const SystemResourceBar: React.FC<{
         variant === "compact"
           ? "flex-row items-center gap-2 p-1"
           : "flex-col gap-2 p-2",
-        className
+        className,
       )}
     >
       {variant === "default" && (
@@ -194,8 +188,8 @@ export const SystemResourceBar: React.FC<{
                 percentage > 80
                   ? "text-destructive"
                   : percentage > 50
-                  ? "text-warning"
-                  : "text-primary"
+                    ? "text-warning"
+                    : "text-primary",
               )}
             >
               {formatBytes(state.total_memory_bytes)}
@@ -213,7 +207,7 @@ export const SystemResourceBar: React.FC<{
             "flex gap-0.5",
             variant === "compact"
               ? "h-3 items-center aspect-square"
-              : "h-2.5 w-full"
+              : "h-2.5 w-full",
           )}
         >
           {squares.map((resource, i) => {
@@ -232,20 +226,18 @@ export const SystemResourceBar: React.FC<{
                         setSelectedResourceId(
                           resource?.id === selectedResourceId
                             ? null
-                            : resource?.id || null
+                            : resource?.id || null,
                         )
                       }
                       className={cn(
-                        "h-full transition-all cursor-pointer rounded-[2px] shadow-sm",
-                        variant === "compact"
-                          ? "w-3 h-3"
-                          : "flex-1 h-2.5",
+                        "h-full transition-all cursor-pointer  shadow-sm",
+                        variant === "compact" ? "w-3 h-3" : "flex-1 h-2.5",
                         isAssigned
                           ? colors[resIdx % colors.length]
-                          : "bg-secondary/10 border border-secondary/20",
+                          : "bg-muted",
                         isAssigned && "hover:brightness-125",
                         isSelected && "border-1 border-foreground/50 z-10",
-                        resource?.status === "loading" && "animate-pulse"
+                        resource?.status === "loading" && "animate-pulse",
                       )}
                     />
                     {resource && (
@@ -314,7 +306,7 @@ export const SystemResourceBar: React.FC<{
                       "h-3 w-3 shrink-0",
                       r.status === "loading"
                         ? "text-warning animate-pulse"
-                        : "text-primary"
+                        : "text-primary",
                     )}
                   />
                   <span className="truncate text-muted-foreground">

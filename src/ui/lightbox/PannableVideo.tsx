@@ -24,6 +24,7 @@ interface PannableVideoProps {
   autoPlay?: boolean;
   onEnded?: () => void;
   loop?: boolean;
+  controlsMode?: "auto" | "hidden";
 }
 
 export const PannableVideo: React.FC<PannableVideoProps> = ({
@@ -35,6 +36,7 @@ export const PannableVideo: React.FC<PannableVideoProps> = ({
   autoPlay = true,
   onEnded,
   loop: propLoop = true,
+  controlsMode = "auto",
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -54,7 +56,7 @@ export const PannableVideo: React.FC<PannableVideoProps> = ({
   const [volume, setVolume] = useState(1);
   const [isMuted, setIsMuted] = useState(false);
   const [isLooping, setIsLooping] = useState(propLoop);
-  const [showControls, setShowControls] = useState(true);
+  const [showControls, setShowControls] = useState(controlsMode !== "hidden");
   const [showZoomIndicator, setShowZoomIndicator] = useState(false);
 
   // Refs
@@ -157,12 +159,13 @@ export const PannableVideo: React.FC<PannableVideoProps> = ({
 
   // Controls Visibility
   const showControlsTemporarily = useCallback(() => {
+    if (controlsMode === "hidden") return;
     setShowControls(true);
     if (controlsTimeoutRef.current) clearTimeout(controlsTimeoutRef.current);
     controlsTimeoutRef.current = setTimeout(() => {
       if (isPlaying) setShowControls(false);
     }, 2500);
-  }, [isPlaying]);
+  }, [controlsMode, isPlaying]);
 
   useEffect(() => {
     showControlsTemporarily();
@@ -216,7 +219,7 @@ export const PannableVideo: React.FC<PannableVideoProps> = ({
     if (zoomTimeoutRef.current) clearTimeout(zoomTimeoutRef.current);
     zoomTimeoutRef.current = setTimeout(
       () => setShowZoomIndicator(false),
-      2000
+      2000,
     );
   }, []);
 
@@ -267,7 +270,7 @@ export const PannableVideo: React.FC<PannableVideoProps> = ({
       ref={containerRef}
       className={cn(
         "relative w-full h-full overflow-hidden bg-black/90 flex items-center justify-center select-none group",
-        className
+        className,
       )}
       onMouseDown={handleMouseDown}
       onMouseMove={handleMouseMove}
@@ -300,111 +303,113 @@ export const PannableVideo: React.FC<PannableVideoProps> = ({
       </div>
 
       {/* --- Custom Controls Overlay --- */}
-      <div
-        className={cn(
-          "video-controls absolute bottom-2 left-1/2 -translate-x-1/2 w-[90%] max-w-2xl bg-black/60 backdrop-blur-md border border-white/10 p-3 flex flex-col gap-2 transition-all duration-300",
-          showControls || !isPlaying
-            ? "opacity-100 translate-y-0"
-            : "opacity-0 translate-y-4 pointer-events-none"
-        )}
-        style={{ marginBottom: controlsBottomOffset }}
-        onClick={(e) => e.stopPropagation()}
-        onDoubleClick={(e) => e.stopPropagation()}
-      >
-        {/* Progress Bar */}
-        <div className="flex items-center gap-3 w-full">
-          <span className="text-xs font-mono text-white/70 min-w-[40px] text-right">
-            {formatTime(videoRef.current?.currentTime || 0)}
-          </span>
-          <Slider
-            value={[progress]}
-            max={100}
-            step={0.1}
-            onValueChange={handleSeek}
-            className="flex-1 cursor-pointer py-1"
-          />
-          <span className="text-xs font-mono text-white/70 min-w-[40px]">
-            {formatTime(duration || 0)}
-          </span>
-        </div>
+      {controlsMode !== "hidden" && (
+        <div
+          className={cn(
+            "video-controls absolute bottom-2 left-1/2 -translate-x-1/2 w-[90%] max-w-2xl bg-black/60 backdrop-blur-md border border-white/10 p-3 flex flex-col gap-2 transition-all duration-300",
+            showControls || !isPlaying
+              ? "opacity-100 translate-y-0"
+              : "opacity-0 translate-y-4 pointer-events-none",
+          )}
+          style={{ marginBottom: controlsBottomOffset }}
+          onClick={(e) => e.stopPropagation()}
+          onDoubleClick={(e) => e.stopPropagation()}
+        >
+          {/* Progress Bar */}
+          <div className="flex items-center gap-3 w-full">
+            <span className="text-xs font-mono text-white/70 min-w-[40px] text-right">
+              {formatTime(videoRef.current?.currentTime || 0)}
+            </span>
+            <Slider
+              value={[progress]}
+              max={100}
+              step={0.1}
+              onValueChange={handleSeek}
+              className="flex-1 cursor-pointer py-1"
+            />
+            <span className="text-xs font-mono text-white/70 min-w-[40px]">
+              {formatTime(duration || 0)}
+            </span>
+          </div>
 
-        {/* Buttons Row */}
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Button
-              variant="ghost"
-              size="icon-sm"
-              onClick={togglePlay}
-              className="hover:bg-white/10 text-white rounded-none h-8 w-8"
-            >
-              {isPlaying ? (
-                <Pause className="w-5 h-5 fill-current" />
-              ) : (
-                <Play className="w-5 h-5 fill-current" />
-              )}
-            </Button>
+          {/* Buttons Row */}
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Button
+                variant="ghost"
+                size="icon-sm"
+                onClick={togglePlay}
+                className="hover:bg-white/10 text-white rounded-none h-8 w-8"
+              >
+                {isPlaying ? (
+                  <Pause className="w-5 h-5 fill-current" />
+                ) : (
+                  <Play className="w-5 h-5 fill-current" />
+                )}
+              </Button>
+
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="ghost"
+                  size="icon-sm"
+                  onClick={toggleMute}
+                  className="hover:bg-white/10 text-white rounded-none h-8 w-8"
+                >
+                  {isMuted || volume === 0 ? (
+                    <VolumeX className="w-5 h-5" />
+                  ) : (
+                    <Volume2 className="w-5 h-5" />
+                  )}
+                </Button>
+                <div className="w-24">
+                  <Slider
+                    value={[isMuted ? 0 : volume]}
+                    max={1}
+                    step={0.05}
+                    onValueChange={(v) => handleVolumeChange(v[0] ?? 0)}
+                    className="w-full"
+                  />
+                </div>
+              </div>
+            </div>
 
             <div className="flex items-center gap-2">
               <Button
                 variant="ghost"
                 size="icon-sm"
-                onClick={toggleMute}
-                className="hover:bg-white/10 text-white rounded-none h-8 w-8"
-              >
-                {isMuted || volume === 0 ? (
-                  <VolumeX className="w-5 h-5" />
-                ) : (
-                  <Volume2 className="w-5 h-5" />
+                onClick={() => setIsLooping(!isLooping)}
+                className={cn(
+                  "hover:bg-white/10 rounded-none h-8 w-8 transition-colors",
+                  isLooping ? "text-primary" : "text-white/50",
                 )}
+                title="Toggle Loop"
+              >
+                <Repeat className="w-4 h-4" />
               </Button>
-              <div className="w-24">
-                <Slider
-                  value={[isMuted ? 0 : volume]}
-                  max={1}
-                  step={0.05}
-                  onValueChange={(v) => handleVolumeChange(v[0] ?? 0)}
-                  className="w-full"
-                />
-              </div>
+
+              {/* Rotation Controls (integrated into bar) */}
+              <Button
+                variant="ghost"
+                size="icon-sm"
+                onClick={() => setRotation((r) => r - 90)}
+                className="hover:bg-white/10 text-white rounded-none h-8 w-8"
+                title="Rotate Left"
+              >
+                <RotateCcw className="w-4 h-4" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon-sm"
+                onClick={() => setRotation((r) => r + 90)}
+                className="hover:bg-white/10 text-white rounded-none h-8 w-8"
+                title="Rotate Right"
+              >
+                <RotateCw className="w-4 h-4" />
+              </Button>
             </div>
           </div>
-
-          <div className="flex items-center gap-2">
-            <Button
-              variant="ghost"
-              size="icon-sm"
-              onClick={() => setIsLooping(!isLooping)}
-              className={cn(
-                "hover:bg-white/10 rounded-none h-8 w-8 transition-colors",
-                isLooping ? "text-primary" : "text-white/50"
-              )}
-              title="Toggle Loop"
-            >
-              <Repeat className="w-4 h-4" />
-            </Button>
-
-            {/* Rotation Controls (integrated into bar) */}
-            <Button
-              variant="ghost"
-              size="icon-sm"
-              onClick={() => setRotation((r) => r - 90)}
-              className="hover:bg-white/10 text-white rounded-none h-8 w-8"
-              title="Rotate Left"
-            >
-              <RotateCcw className="w-4 h-4" />
-            </Button>
-            <Button
-              variant="ghost"
-              size="icon-sm"
-              onClick={() => setRotation((r) => r + 90)}
-              className="hover:bg-white/10 text-white rounded-none h-8 w-8"
-              title="Rotate Right"
-            >
-              <RotateCw className="w-4 h-4" />
-            </Button>
-          </div>
         </div>
-      </div>
+      )}
 
       {/* Zoom indicator and Help (Bottom Right) */}
       <div

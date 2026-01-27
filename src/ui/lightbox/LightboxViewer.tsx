@@ -25,6 +25,7 @@ interface LightboxViewerProps {
   onClose?: () => void;
   showGalleryPicker?: boolean;
   showThumbnailStrip?: boolean;
+  videoControls?: "auto" | "hidden";
 }
 
 interface LightboxSettings {
@@ -46,6 +47,7 @@ export const LightboxViewer = ({
   onClose,
   showGalleryPicker = false,
   showThumbnailStrip = false,
+  videoControls = "auto",
 }: LightboxViewerProps) => {
   const [isPlaying, setIsPlaying] = useState(false);
   const [isStripOpen, setIsStripOpen] = useState(false);
@@ -145,7 +147,7 @@ export const LightboxViewer = ({
     : 16; // Default padding
 
   return (
-    <div className="flex flex-col w-full h-full relative min-h-max flex-1 focus:outline-none">
+    <div className="flex flex-col w-full h-full relative min-h-0 flex-1 focus:outline-none">
       {/* Top Gallery Picker */}
       {showGalleryPicker && (
         <div className="absolute top-0 left-0 right-0 z-20 pointer-events-none">
@@ -282,7 +284,7 @@ export const LightboxViewer = ({
       </div>
 
       {/* Main Image - Pannable Canvas */}
-      <div className="flex-1 flex items-center justify-center relative w-full h-full min-h-full">
+      <div className="flex-1 flex items-center justify-center relative w-full h-full min-h-0">
         {isLoading && (
           <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/20 backdrop-blur-[1px]">
             <Loader2 className="w-10 h-10 text-white animate-spin" />
@@ -298,6 +300,7 @@ export const LightboxViewer = ({
               actions={pannableActions}
               controlsBottomOffset={controlsBottomOffset}
               autoPlay={settings.videoAutoPlay}
+              controlsMode={videoControls}
               // If we are in slideshow mode AND auto-advance is on, we force loop to false so it ends
               loop={
                 isPlaying && settings.videoAutoAdvance

@@ -24,6 +24,7 @@ import {
 
 export interface PanelHeaderProps {
   title: string;
+  titleIcon?: React.ReactNode;
   pinned: boolean;
   titlePosition: "top" | "bottom";
   showTitle: boolean;
@@ -43,6 +44,7 @@ export interface PanelHeaderProps {
 
 export function PanelHeader({
   title,
+  titleIcon,
   pinned,
   titlePosition,
   showTitle,
@@ -62,15 +64,23 @@ export function PanelHeader({
       className={cn(
         "flex items-center justify-between p-2 border-b select-none shrink-0 bg-muted/50",
         pinned ? "cursor-default" : "cursor-move",
-        titlePosition === "bottom" && "border-t border-b-0"
+        titlePosition === "bottom" && "border-t border-b-0",
+        isFolded && "border-b-0 border-t-0",
       )}
       onMouseDown={onMouseDown}
       onContextMenu={(e) => {
         e.preventDefault();
         onShowTitleChange(true);
+        if (isFolded) onFoldToggle();
       }}
+      onDoubleClick={onFoldToggle}
     >
       <div className="font-medium text-sm px-2 flex items-center gap-2">
+        {titleIcon ? (
+          <span className="flex h-4 w-4 items-center justify-center">
+            {titleIcon}
+          </span>
+        ) : null}
         {title}
       </div>
       <div className="flex items-center gap-1">
@@ -107,7 +117,7 @@ export function PanelHeader({
             <DropdownMenuItem
               onClick={() =>
                 onTitlePositionChange(
-                  titlePosition === "top" ? "bottom" : "top"
+                  titlePosition === "top" ? "bottom" : "top",
                 )
               }
             >

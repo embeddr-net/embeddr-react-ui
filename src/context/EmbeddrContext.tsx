@@ -19,3 +19,7 @@ export const useEmbeddrAPI = (): EmbeddrAPI => {
   }
   return context;
 };
+
+export const useOptionalEmbeddrAPI = (): EmbeddrAPI | null => {
+  return useContext(EmbeddrContext);
+};

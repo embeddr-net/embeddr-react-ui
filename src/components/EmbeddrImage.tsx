@@ -2,12 +2,14 @@ import React from "react";
 import { EmbeddrDnDTypes } from "../lib/dnd";
 import { cn } from "../lib/utils";
 
-export interface EmbeddrImageProps
-  extends React.ImgHTMLAttributes<HTMLImageElement> {
-  id: string; // The Artifact ID
+export interface EmbeddrImageProps extends React.ImgHTMLAttributes<HTMLImageElement> {
+  id?: string; // The Artifact ID (optional for external resources)
   backendUrl?: string; // Base URL of the backend (e.g. http://localhost:8080)
   artifactType?: string; // defaults to 'image'
   artifactPath?: string; // Optional local path if known
+  contentUrl?: string; // Normalized content URL
+  previewUrl?: string; // Normalized preview URL
+  artifactPayload?: Record<string, any>; // Optional full payload for DnD
 }
 
 export const EmbeddrImage = React.forwardRef<
@@ -21,11 +23,14 @@ export const EmbeddrImage = React.forwardRef<
       backendUrl = "",
       artifactType = "image",
       artifactPath = "",
+      contentUrl: contentUrlProp,
+      previewUrl: previewUrlProp,
+      artifactPayload,
       onDragStart,
       className,
       ...props
     },
-    ref
+    ref,
   ) => {
     // Default drag handler
     const handleDragStart = (e: React.DragEvent<HTMLImageElement>) => {
@@ -43,24 +48,30 @@ export const EmbeddrImage = React.forwardRef<
         baseUrl = `${baseUrl}/api/v2`;
       }
 
-      let contentUrl = src || "";
-      let previewUrl = "";
+      let contentUrl = contentUrlProp || src || "";
+      let previewUrl = previewUrlProp || "";
 
-      if (baseUrl) {
+      if (!contentUrl && id && baseUrl) {
         contentUrl = `${baseUrl}/artifacts/${id}/content`;
+      }
+      if (!previewUrl && id && baseUrl) {
         previewUrl = `${baseUrl}/artifacts/${id}/preview`;
       }
 
-      e.dataTransfer.setData(EmbeddrDnDTypes.ARTIFACT_ID, id);
-      // Legacy compat
-      e.dataTransfer.setData(EmbeddrDnDTypes.IMAGE_ID, id);
+      if (id) {
+        e.dataTransfer.setData(EmbeddrDnDTypes.ARTIFACT_ID, id);
+        // Legacy compat
+        e.dataTransfer.setData(EmbeddrDnDTypes.IMAGE_ID, id);
+      }
 
       e.dataTransfer.setData(EmbeddrDnDTypes.ARTIFACT_TYPE, artifactType);
 
       e.dataTransfer.setData(EmbeddrDnDTypes.ARTIFACT_PATH, artifactPath);
 
       // Set URL in text/plain for general compatibility
-      e.dataTransfer.setData("text/plain", contentUrl);
+      if (contentUrl) {
+        e.dataTransfer.setData("text/plain", contentUrl);
+      }
 
       // Set specific URL types
       if (previewUrl) {
@@ -71,8 +82,20 @@ export const EmbeddrImage = React.forwardRef<
         e.dataTransfer.setData(EmbeddrDnDTypes.VIDEO_URL, contentUrl);
       } else {
         // Default to image if generic or specific image
-        e.dataTransfer.setData(EmbeddrDnDTypes.IMAGE_URL, contentUrl);
+        if (contentUrl) {
+          e.dataTransfer.setData(EmbeddrDnDTypes.IMAGE_URL, contentUrl);
+        }
       }
+
+      const payload = {
+        id: id ?? null,
+        type: artifactType,
+        content_url: contentUrl || null,
+        preview_url: previewUrl || null,
+        path: artifactPath || null,
+        ...artifactPayload,
+      };
+      e.dataTransfer.setData(EmbeddrDnDTypes.ARTIFACT, JSON.stringify(payload));
 
       e.dataTransfer.effectAllowed = "copy";
 
@@ -93,11 +116,11 @@ export const EmbeddrImage = React.forwardRef<
         src={src}
         draggable
         onDragStart={handleDragStart}
-        className={cn("hover:border-1 hover:border-primary", className)}
+        className={cn("hover:border-primary", className)}
         {...props}
       />
     );
-  }
+  },
 );
 
 EmbeddrImage.displayName = "EmbeddrImage";

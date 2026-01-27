@@ -9,4 +9,5 @@ export * from "./components/visualization/Umap3DExplorer";
 export * from "./components/visualization/ControlledUmap3D";
 export * from "./components/visualization/types";
 export * from "./components/EmbeddrImage";
+export * from "./components/EmbeddrArtifact";
 export * from "./components/VideoPlayer";

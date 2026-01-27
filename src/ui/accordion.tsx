@@ -17,7 +17,7 @@ function AccordionItem({
   return (
     <AccordionPrimitive.Item
       data-slot="accordion-item"
-      className={cn("border-b last:border-b-0", className)}
+      className={cn("border-b", className)}
       {...props}
     />
   );
@@ -34,7 +34,7 @@ function AccordionTrigger({
         data-slot="accordion-trigger"
         className={cn(
           "cursor-pointer  focus-visible:border-ring focus-visible:ring-ring/50 flex flex-1 items-start justify-between gap-4  py-4 text-left text-sm font-medium transition-all outline-none hover:underline focus-visible:ring-[3px] disabled:pointer-events-none disabled:opacity-50 [&[data-state=open]>svg]:rotate-180",
-          className
+          className,
         )}
         {...props}
       >

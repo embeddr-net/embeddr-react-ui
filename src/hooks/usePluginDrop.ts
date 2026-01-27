@@ -1,14 +1,22 @@
-import { useCallback, useState, type DragEvent } from "react";
+import React from "react";
 import { EmbeddrDnDTypes } from "../lib/dnd";
 
 export interface UsePluginDropOptions {
   /** Callback when an internal artifact is dropped */
   onArtifact?: (data: {
-    id: string;
-    type: string;
+    id?: string;
+    type?: string;
+    base_type_name?: string;
+    type_name?: string;
+    media_type?: string;
+    content_url?: string;
+    preview_url?: string;
     previewUrl?: string;
     imageUrl?: string;
     videoUrl?: string;
+    url?: string;
+    path?: string;
+    [key: string]: any;
   }) => void;
   /** Callback when external files are dropped */
   onFile?: (file: File) => void;
@@ -27,10 +35,10 @@ export function usePluginDrop({
   onText,
   stopPropagation = true,
 }: UsePluginDropOptions) {
-  const [isDragOver, setIsDragOver] = useState(false);
+  const [isDragOver, setIsDragOver] = React.useState(false);
 
-  const handleDragOver = useCallback(
-    (e: DragEvent) => {
+  const handleDragOver = React.useCallback(
+    (e: React.DragEvent) => {
       e.preventDefault();
       if (stopPropagation) e.stopPropagation();
       setIsDragOver(true);
@@ -38,8 +46,8 @@ export function usePluginDrop({
     [stopPropagation]
   );
 
-  const handleDragLeave = useCallback(
-    (e: DragEvent) => {
+  const handleDragLeave = React.useCallback(
+    (e: React.DragEvent) => {
       e.preventDefault();
       if (stopPropagation) e.stopPropagation();
       setIsDragOver(false);
@@ -47,36 +55,15 @@ export function usePluginDrop({
     [stopPropagation]
   );
 
-  const handleDrop = useCallback(
-    (e: DragEvent) => {
+  const handleDrop = React.useCallback(
+    (e: React.DragEvent) => {
       e.preventDefault();
       if (stopPropagation) e.stopPropagation();
       setIsDragOver(false);
 
       const dt = e.dataTransfer;
 
-      // 0. Check for ARTIFACT_ID (Granular fallback)
-      const artifactId =
-        dt.getData(EmbeddrDnDTypes.ARTIFACT_ID) ||
-        dt.getData(EmbeddrDnDTypes.IMAGE_ID);
-      if (artifactId && onArtifact) {
-        const type = dt.getData(EmbeddrDnDTypes.ARTIFACT_TYPE) || "image";
-        const previewUrl = dt.getData(EmbeddrDnDTypes.PREVIEW_URL);
-        const imageUrl = dt.getData(EmbeddrDnDTypes.IMAGE_URL);
-        const videoUrl = dt.getData(EmbeddrDnDTypes.VIDEO_URL);
-
-        // Construct a minimal object
-        onArtifact({
-          id: artifactId,
-          type,
-          previewUrl,
-          imageUrl,
-          videoUrl,
-        });
-        return;
-      }
-
-      // 1. Check for Internal Artifact
+      // 0. Check for Internal Artifact payload
       const artifactJson = dt.getData(EmbeddrDnDTypes.ARTIFACT);
       if (artifactJson && onArtifact) {
         try {
@@ -88,8 +75,28 @@ export function usePluginDrop({
         }
       }
 
+      // 1. Check for ARTIFACT_ID (Granular fallback)
+      const artifactId =
+        dt.getData(EmbeddrDnDTypes.ARTIFACT_ID) ||
+        dt.getData(EmbeddrDnDTypes.IMAGE_ID);
+      if (artifactId && onArtifact) {
+        const type = dt.getData(EmbeddrDnDTypes.ARTIFACT_TYPE) || "image";
+        const previewUrl = dt.getData(EmbeddrDnDTypes.PREVIEW_URL);
+        const imageUrl = dt.getData(EmbeddrDnDTypes.IMAGE_URL);
+        const videoUrl = dt.getData(EmbeddrDnDTypes.VIDEO_URL);
+
+        onArtifact({
+          id: artifactId,
+          type,
+          previewUrl,
+          imageUrl,
+          videoUrl,
+        });
+        return;
+      }
+
       // 2. Check for Files
-      if (dt.files && dt.files.length > 0 && onFile) {
+      if (dt.files.length > 0 && onFile) {
         Array.from(dt.files).forEach((file) => onFile(file));
         return;
       }

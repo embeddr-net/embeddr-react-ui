@@ -127,6 +127,27 @@ export interface EmbeddrAPI {
     isPanelActive: (panelId: string) => boolean;
   };
   /**
+   * Workspace layout management (client-side only).
+   */
+  workspaces: {
+    getState: () => any;
+    subscribe: (listener: (state: any) => void) => () => void;
+    list: () => Array<any>;
+    getActiveId: () => string | null;
+    ensureDefault: () => void;
+    create: (
+      name: string,
+      options?: { fromCurrent?: boolean; isTemplate?: boolean },
+    ) => string;
+    save: (id: string) => void;
+    saveActive: () => void;
+    apply: (id: string) => void;
+    rename: (id: string, name: string) => void;
+    clone: (id: string, name?: string) => string | null;
+    remove: (id: string) => void;
+    setTemplate: (id: string, isTemplate: boolean) => void;
+  };
+  /**
    * Application settings and preferences.
    */
   settings: {
@@ -173,7 +194,7 @@ export interface EmbeddrAPI {
     uploadImage: (
       file: File,
       prompt?: string,
-      parent_ids?: Array<string | number>
+      parent_ids?: Array<string | number>,
     ) => Promise<PromptImage>;
     /**
      * Get a full URL for a plugin asset or route.
@@ -181,15 +202,81 @@ export interface EmbeddrAPI {
      */
     getPluginUrl: (path: string) => string;
   };
+  artifacts: {
+    list: (input: {
+      limit?: number;
+      offset?: number;
+      type_name?: string;
+      sort?: "new" | "random";
+      ids?: Array<string>;
+    }) => Promise<{ items: Array<any>; count?: number }>;
+    get: (id: string) => Promise<any>;
+    getContentUrl: (id: string) => string;
+    resolve: (input: {
+      id: string;
+      variant?: "preview" | "original";
+    }) => Promise<any>;
+    create: (input: {
+      type_name: string;
+      uri?: string;
+      metadata_json?: Record<string, any>;
+      override_capabilities?: Array<string>;
+      base_type_name?: string;
+      confirm?: boolean;
+    }) => Promise<any>;
+    update: (
+      id: string,
+      input: {
+        metadata_json?: Record<string, any>;
+        override_capabilities?: Array<string>;
+        uri?: string;
+        type_name?: string;
+        base_type_name?: string;
+      },
+    ) => Promise<any>;
+    delete: (id: string) => Promise<any>;
+    uploadInit: (input: {
+      artifact_id: string;
+      filename?: string;
+      content_type?: string;
+      size?: number;
+      confirm?: boolean;
+    }) => Promise<any>;
+    uploadComplete: (input: {
+      upload_id: string;
+      confirm?: boolean;
+    }) => Promise<any>;
+    uploadFile: (input: { artifact_id: string; file: File }) => Promise<any>;
+  };
+  resources: {
+    resolve: (input: {
+      artifactId?: string;
+      url?: string;
+      hintType?: string;
+      adapterId?: string;
+      artifactPayload?: Record<string, any>;
+    }) => Promise<{
+      id?: string;
+      type?: string;
+      content_url?: string;
+      preview_url?: string;
+      title?: string;
+      url?: string;
+      payload?: Record<string, any>;
+    }>;
+  };
   client: {
     plugins: {
       call: <T = any>(
         pluginId: string,
         path: string,
         method: string,
-        body?: any
+        body?: any,
       ) => Promise<T>;
     };
+  };
+  plugins: {
+    list: () => Promise<Array<any>>;
   };
   /**
    * Event bus for inter-plugin communication.
@@ -199,24 +286,56 @@ export interface EmbeddrAPI {
      * Subscribe to an event.
      * @returns A cleanup function to unsubscribe.
      */
-    on<K extends keyof EmbeddrEventMap>(
-      event: K,
-      listener: (payload: EmbeddrEventMap[K]) => void
-    ): () => void;
+    on: <TEvent extends keyof EmbeddrEventMap>(
+      event: TEvent,
+      listener: (payload: EmbeddrEventMap[TEvent]) => void,
+    ) => () => void;
     /**
      * Unsubscribe from an event.
      */
-    off<K extends keyof EmbeddrEventMap>(
-      event: K,
-      listener: (payload: EmbeddrEventMap[K]) => void
-    ): void;
+    off: <TEvent extends keyof EmbeddrEventMap>(
+      event: TEvent,
+      listener: (payload: EmbeddrEventMap[TEvent]) => void,
+    ) => void;
     /**
      * Emit a custom event.
      */
-    emit<K extends keyof EmbeddrEventMap>(
-      event: K,
-      payload: EmbeddrEventMap[K]
-    ): void;
+    emit: <TEvent extends keyof EmbeddrEventMap>(
+      event: TEvent,
+      payload: EmbeddrEventMap[TEvent],
+    ) => void;
+  };
+  executions: {
+    create: (input: {
+      plugin_name: string;
+      job_type?: string;
+      inputs?: Record<string, any>;
+      action_id?: string;
+      parameters?: Record<string, any>;
+    }) => Promise<any>;
+    get: (executionId: string) => Promise<any>;
+    list: (input?: {
+      plugin_name?: string;
+      status?: string;
+      limit?: number;
+      offset?: number;
+    }) => Promise<Array<any>>;
+  };
+  lotus: {
+    invoke: (capId: string, input?: Record<string, any>) => Promise<any>;
+    query: (query: string, limit?: number) => Promise<any>;
+    list: (input?: {
+      kind?: string;
+      plugin?: string;
+      slot?: string;
+      limit?: number;
+      offset?: number;
+    }) => Promise<{
+      items: Array<any>;
+      total?: number;
+      limit?: number;
+      offset?: number;
+    }>;
   };
   /**
    * Integration with ComfyUI resources.
@@ -227,7 +346,7 @@ export interface EmbeddrAPI {
      */
     getLoras: (
       page?: number,
-      limit?: number
+      limit?: number,
     ) => Promise<{
       items: Array<string>;
       total: number;
@@ -239,7 +358,7 @@ export interface EmbeddrAPI {
      */
     getCheckpoints: (
       page?: number,
-      limit?: number
+      limit?: number,
     ) => Promise<{
       items: Array<string>;
       total: number;
@@ -251,7 +370,7 @@ export interface EmbeddrAPI {
      */
     getEmbeddings: (
       page?: number,
-      limit?: number
+      limit?: number,
     ) => Promise<{
       items: Array<string>;
       total: number;
@@ -270,6 +389,8 @@ export interface EmbeddrAPI {
     open: (id: string, title: string, componentId: string, props?: any) => void;
     spawn: (componentId: string, title: string, props?: any) => string;
     register: (id: string, component: React.ComponentType<any>) => void;
+    getState?: () => any;
+    list?: () => Array<any>;
   };
 }
 
