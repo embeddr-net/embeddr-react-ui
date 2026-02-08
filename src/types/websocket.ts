@@ -13,22 +13,32 @@ export interface WSBaseMessage<T = unknown> {
 /**
  * Initial message sent upon successful connection.
  */
-export interface WelcomeMsg
-  extends WSBaseMessage<{
-    client_id: string;
-  }> {
+export interface WelcomeMsg extends WSBaseMessage<{
+  client_id: string;
+}> {
   type: "welcome";
+  source: "embeddr";
+}
+
+/**
+ * Initial message sent upon successful connection with user context.
+ */
+export interface ClientHelloMsg extends WSBaseMessage<{
+  client_id: string;
+  user_id: string | null;
+  username: string | null;
+}> {
+  type: "client_hello";
   source: "embeddr";
 }
 
 /**
  * Broadcast when a client connects.
  */
-export interface ClientConnectedMsg
-  extends WSBaseMessage<{
-    client_id: string;
-    total: number;
-  }> {
+export interface ClientConnectedMsg extends WSBaseMessage<{
+  client_id: string;
+  total: number;
+}> {
   type: "client_connected";
   source: "embeddr";
 }
@@ -36,11 +46,10 @@ export interface ClientConnectedMsg
 /**
  * Broadcast when a client disconnects.
  */
-export interface ClientDisconnectedMsg
-  extends WSBaseMessage<{
-    client_id: string;
-    total: number;
-  }> {
+export interface ClientDisconnectedMsg extends WSBaseMessage<{
+  client_id: string;
+  total: number;
+}> {
   type: "client_disconnected";
   source: "embeddr";
 }
@@ -49,13 +58,12 @@ export interface ClientDisconnectedMsg
  * Response to an initial connection or status request.
  * Contains the current queue size and list of actively running generations.
  */
-export interface StatusResponseMsg
-  extends WSBaseMessage<{
-    queue_status: {
-      remaining: number;
-    };
-    running_generations: Array<Generation>;
-  }> {
+export interface StatusResponseMsg extends WSBaseMessage<{
+  queue_status: {
+    remaining: number;
+  };
+  running_generations: Array<Generation>;
+}> {
   type: "status_response";
   source: "embeddr";
 }
@@ -63,11 +71,10 @@ export interface StatusResponseMsg
 /**
  * Broadcast when a new generation request is successfully submitted to the queue.
  */
-export interface GenerationSubmittedMsg
-  extends WSBaseMessage<{
-    generation_id: string;
-    prompt_id: string;
-  }> {
+export interface GenerationSubmittedMsg extends WSBaseMessage<{
+  generation_id: string;
+  prompt_id: string;
+}> {
   type: "generation_submitted";
   source: "embeddr";
 }
@@ -75,11 +82,10 @@ export interface GenerationSubmittedMsg
 /**
  * Broadcast when items are added to a dataset.
  */
-export interface DatasetItemsAddedMsg
-  extends WSBaseMessage<{
-    dataset_id: number;
-    count: number;
-  }> {
+export interface DatasetItemsAddedMsg extends WSBaseMessage<{
+  dataset_id: number;
+  count: number;
+}> {
   type: "dataset:items_added";
   source: "embeddr";
 }
@@ -87,12 +93,11 @@ export interface DatasetItemsAddedMsg
 /**
  * Broadcast when a dataset item is updated (e.g. caption generated).
  */
-export interface DatasetItemUpdatedMsg
-  extends WSBaseMessage<{
-    id: number;
-    dataset_id: number;
-    caption: string;
-  }> {
+export interface DatasetItemUpdatedMsg extends WSBaseMessage<{
+  id: number;
+  dataset_id: number;
+  caption: string;
+}> {
   type: "dataset:item_updated";
   source: "embeddr";
 }
@@ -102,6 +107,7 @@ export interface DatasetItemUpdatedMsg
  */
 export type EmbeddrSystemMessage =
   | WelcomeMsg
+  | ClientHelloMsg
   | ClientConnectedMsg
   | ClientDisconnectedMsg
   | StatusResponseMsg
@@ -114,10 +120,9 @@ export type EmbeddrSystemMessage =
 /**
  * ComfyUI started executing a node graph.
  */
-export interface ComfyExecutionStartMsg
-  extends WSBaseMessage<{
-    prompt_id: string;
-  }> {
+export interface ComfyExecutionStartMsg extends WSBaseMessage<{
+  prompt_id: string;
+}> {
   type: "execution_start";
   source: "comfyui";
 }
@@ -125,12 +130,11 @@ export interface ComfyExecutionStartMsg
 /**
  * ComfyUI finished executing a specific node.
  */
-export interface ComfyExecutingMsg
-  extends WSBaseMessage<{
-    node: string | null;
-    display_node?: string;
-    prompt_id: string;
-  }> {
+export interface ComfyExecutingMsg extends WSBaseMessage<{
+  node: string | null;
+  display_node?: string;
+  prompt_id: string;
+}> {
   type: "executing";
   source: "comfyui";
 }
@@ -138,11 +142,10 @@ export interface ComfyExecutingMsg
 /**
  * ComfyUI execution progress update.
  */
-export interface ComfyProgressMsg
-  extends WSBaseMessage<{
-    value: number;
-    max: number;
-  }> {
+export interface ComfyProgressMsg extends WSBaseMessage<{
+  value: number;
+  max: number;
+}> {
   type: "progress";
   source: "comfyui";
 }
@@ -150,12 +153,11 @@ export interface ComfyProgressMsg
 /**
  * Complete execution of a workflow.
  */
-export interface ComfyExecutedMsg
-  extends WSBaseMessage<{
-    node: string;
-    output: Record<string, unknown>;
-    prompt_id: string;
-  }> {
+export interface ComfyExecutedMsg extends WSBaseMessage<{
+  node: string;
+  output: Record<string, unknown>;
+  prompt_id: string;
+}> {
   type: "executed";
   source: "comfyui";
 }

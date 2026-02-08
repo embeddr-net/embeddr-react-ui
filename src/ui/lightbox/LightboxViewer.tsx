@@ -26,6 +26,7 @@ interface LightboxViewerProps {
   showGalleryPicker?: boolean;
   showThumbnailStrip?: boolean;
   videoControls?: "auto" | "hidden";
+  apiKey?: string;
 }
 
 interface LightboxSettings {
@@ -48,6 +49,7 @@ export const LightboxViewer = ({
   showGalleryPicker = false,
   showThumbnailStrip = false,
   videoControls = "auto",
+  apiKey,
 }: LightboxViewerProps) => {
   const [isPlaying, setIsPlaying] = useState(false);
   const [isStripOpen, setIsStripOpen] = useState(false);
@@ -176,7 +178,7 @@ export const LightboxViewer = ({
           variant="outline"
           size="icon-sm"
           onClick={() => setIsPlaying(!isPlaying)}
-          className="rounded-none bg-background/90 hover:bg-secondary/20 text-muted-foreground hover:text-foreground border border-border backdrop-blur-sm shadow-sm"
+          className=" bg-background/90 hover:bg-secondary/20 text-muted-foreground hover:text-foreground border border-border backdrop-blur-sm shadow-sm"
           title={isPlaying ? "Pause slideshow" : "Start slideshow"}
         >
           {isPlaying ? (
@@ -192,7 +194,7 @@ export const LightboxViewer = ({
             <Button
               variant="outline"
               size="icon-sm"
-              className="rounded-none bg-background/90 hover:bg-secondary/20 text-muted-foreground hover:text-foreground border border-border backdrop-blur-sm shadow-sm"
+              className=" bg-background/90 hover:bg-secondary/20 text-muted-foreground hover:text-foreground border border-border backdrop-blur-sm shadow-sm"
             >
               <Settings2 className="h-4 w-4" />
             </Button>
@@ -234,8 +236,11 @@ export const LightboxViewer = ({
 
               {/* Video Settings */}
               <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <Label htmlFor="auto-advance" className="flex flex-col gap-1">
+                <div className="flex justify-between">
+                  <Label
+                    htmlFor="auto-advance"
+                    className=" items-start flex flex-col gap-1"
+                  >
                     <span>Video Auto-Advance</span>
                     <span className="font-normal text-xs text-muted-foreground">
                       Next slide when video ends
@@ -249,8 +254,11 @@ export const LightboxViewer = ({
                     }
                   />
                 </div>
-                <div className="flex items-center justify-between">
-                  <Label htmlFor="video-loop" className="flex flex-col gap-1">
+                <div className="flex justify-between">
+                  <Label
+                    htmlFor="video-loop"
+                    className=" items-start flex flex-col gap-1"
+                  >
                     <span>Loop Videos</span>
                     <span className="font-normal text-xs text-muted-foreground">
                       Repeat video when playing manually
@@ -262,8 +270,11 @@ export const LightboxViewer = ({
                     onCheckedChange={(c) => updateSettings({ videoLoop: c })}
                   />
                 </div>
-                <div className="flex items-center justify-between">
-                  <Label htmlFor="video-play" className="flex flex-col gap-1">
+                <div className="flex justify-between">
+                  <Label
+                    htmlFor="video-play"
+                    className="items-start flex flex-col gap-1"
+                  >
                     <span>Auto Play</span>
                     <span className="font-normal text-xs text-muted-foreground">
                       Start videos automatically
@@ -294,6 +305,7 @@ export const LightboxViewer = ({
           // Determine if we show video or image component
           (isVideo ? (
             <PannableVideo
+              apiKey={apiKey}
               src={imageSrc}
               className="w-full h-full"
               isOpen={isOpen}
@@ -311,6 +323,7 @@ export const LightboxViewer = ({
             />
           ) : (
             <PannableImage
+              apiKey={apiKey}
               src={imageSrc}
               mediaType="image"
               className="w-full h-full"
@@ -344,6 +357,7 @@ export const LightboxViewer = ({
               onImageChange={handleImageChange}
               isOpen={isStripOpen}
               onToggle={() => setIsStripOpen(!isStripOpen)}
+              apiKey={apiKey}
             />
           )}
         </div>

@@ -25,6 +25,7 @@ interface PannableVideoProps {
   onEnded?: () => void;
   loop?: boolean;
   controlsMode?: "auto" | "hidden";
+  apiKey?: string;
 }
 
 export const PannableVideo: React.FC<PannableVideoProps> = ({
@@ -37,6 +38,7 @@ export const PannableVideo: React.FC<PannableVideoProps> = ({
   onEnded,
   loop: propLoop = true,
   controlsMode = "auto",
+  apiKey,
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -58,12 +60,35 @@ export const PannableVideo: React.FC<PannableVideoProps> = ({
   const [isLooping, setIsLooping] = useState(propLoop);
   const [showControls, setShowControls] = useState(controlsMode !== "hidden");
   const [showZoomIndicator, setShowZoomIndicator] = useState(false);
+  const [currentSrc, setCurrentSrc] = useState(src);
+
+  const appendApiKey = useCallback((input: string, key?: string) => {
+    if (!key || !input.startsWith("http")) return input;
+    try {
+      const url = new URL(input);
+      if (url.searchParams.has("api_key")) return input;
+      url.searchParams.set("api_key", key);
+      return url.toString();
+    } catch {
+      return input;
+    }
+  }, []);
 
   // Refs
   const zoomRef = useRef(1);
   const panRef = useRef({ x: 0, y: 0 });
   const zoomTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const controlsTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    let active = true;
+
+    setCurrentSrc(appendApiKey(src, apiKey));
+
+    return () => {
+      active = false;
+    };
+  }, [src, apiKey, appendApiKey]);
 
   // Initialize Volume from LocalStorage
   useEffect(() => {
@@ -295,7 +320,7 @@ export const PannableVideo: React.FC<PannableVideoProps> = ({
       >
         <video
           ref={videoRef}
-          src={src}
+          src={currentSrc}
           autoPlay={autoPlay}
           playsInline
           className="max-w-full max-h-full object-contain"
@@ -306,7 +331,7 @@ export const PannableVideo: React.FC<PannableVideoProps> = ({
       {controlsMode !== "hidden" && (
         <div
           className={cn(
-            "video-controls absolute bottom-2 left-1/2 -translate-x-1/2 w-[90%] max-w-2xl bg-black/60 backdrop-blur-md border border-white/10 p-3 flex flex-col gap-2 transition-all duration-300",
+            "video-controls rounded-md absolute bottom-2 left-1/2 -translate-x-1/2 w-[90%] max-w-2xl bg-black/60 backdrop-blur-md border border-white/10 p-3 flex flex-col gap-2 transition-all duration-300",
             showControls || !isPlaying
               ? "opacity-100 translate-y-0"
               : "opacity-0 translate-y-4 pointer-events-none",
@@ -325,7 +350,7 @@ export const PannableVideo: React.FC<PannableVideoProps> = ({
               max={100}
               step={0.1}
               onValueChange={handleSeek}
-              className="flex-1 cursor-pointer py-1"
+              className="flex-1 cursor-pointer"
             />
             <span className="text-xs font-mono text-white/70 min-w-[40px]">
               {formatTime(duration || 0)}
@@ -339,7 +364,7 @@ export const PannableVideo: React.FC<PannableVideoProps> = ({
                 variant="ghost"
                 size="icon-sm"
                 onClick={togglePlay}
-                className="hover:bg-white/10 text-white rounded-none h-8 w-8"
+                className="hover:bg-white/10 text-white  h-8 w-8"
               >
                 {isPlaying ? (
                   <Pause className="w-5 h-5 fill-current" />
@@ -353,7 +378,7 @@ export const PannableVideo: React.FC<PannableVideoProps> = ({
                   variant="ghost"
                   size="icon-sm"
                   onClick={toggleMute}
-                  className="hover:bg-white/10 text-white rounded-none h-8 w-8"
+                  className="hover:bg-white/10 text-white  h-8 w-8"
                 >
                   {isMuted || volume === 0 ? (
                     <VolumeX className="w-5 h-5" />
@@ -379,7 +404,7 @@ export const PannableVideo: React.FC<PannableVideoProps> = ({
                 size="icon-sm"
                 onClick={() => setIsLooping(!isLooping)}
                 className={cn(
-                  "hover:bg-white/10 rounded-none h-8 w-8 transition-colors",
+                  "hover:bg-white/10  h-8 w-8 transition-colors",
                   isLooping ? "text-primary" : "text-white/50",
                 )}
                 title="Toggle Loop"
@@ -392,7 +417,7 @@ export const PannableVideo: React.FC<PannableVideoProps> = ({
                 variant="ghost"
                 size="icon-sm"
                 onClick={() => setRotation((r) => r - 90)}
-                className="hover:bg-white/10 text-white rounded-none h-8 w-8"
+                className="hover:bg-white/10 text-white  h-8 w-8"
                 title="Rotate Left"
               >
                 <RotateCcw className="w-4 h-4" />
@@ -401,7 +426,7 @@ export const PannableVideo: React.FC<PannableVideoProps> = ({
                 variant="ghost"
                 size="icon-sm"
                 onClick={() => setRotation((r) => r + 90)}
-                className="hover:bg-white/10 text-white rounded-none h-8 w-8"
+                className="hover:bg-white/10 text-white  h-8 w-8"
                 title="Rotate Right"
               >
                 <RotateCw className="w-4 h-4" />

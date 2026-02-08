@@ -78,7 +78,7 @@ export const SystemResourceBar: React.FC<{
   const fetchResources = async () => {
     try {
       const baseUrl = getBaseUrl();
-      const response = await fetch(`${baseUrl}/api/v2/system/resources`);
+      const response = await fetch(`${baseUrl}/api/v1/system/resources`);
       if (response.ok) {
         const data = await response.json();
         setState(data);
@@ -94,7 +94,7 @@ export const SystemResourceBar: React.FC<{
     try {
       const baseUrl = getBaseUrl();
       await fetch(
-        `${baseUrl}/api/v2/system/resources/unload?resource_id=${encodeURIComponent(
+        `${baseUrl}/api/v1/system/resources/unload?resource_id=${encodeURIComponent(
           id,
         )}`,
         {

@@ -25,6 +25,8 @@ import {
 export interface PanelHeaderProps {
   title: string;
   titleIcon?: React.ReactNode;
+  panelId?: string;
+  mergeActive?: boolean;
   pinned: boolean;
   titlePosition: "top" | "bottom";
   showTitle: boolean;
@@ -45,6 +47,8 @@ export interface PanelHeaderProps {
 export function PanelHeader({
   title,
   titleIcon,
+  panelId,
+  mergeActive,
   pinned,
   titlePosition,
   showTitle,
@@ -62,11 +66,13 @@ export function PanelHeader({
   return (
     <div
       className={cn(
-        "flex items-center justify-between p-2 border-b select-none shrink-0 bg-muted/50",
+        "embeddr-panel-header flex items-center justify-between px-1 h-[40px] border-b select-none shrink-0 bg-muted/50",
         pinned ? "cursor-default" : "cursor-move",
         titlePosition === "bottom" && "border-t border-b-0",
         isFolded && "border-b-0 border-t-0",
       )}
+      data-panel-id={panelId}
+      data-panel-title={title}
       onMouseDown={onMouseDown}
       onContextMenu={(e) => {
         e.preventDefault();
@@ -75,22 +81,39 @@ export function PanelHeader({
       }}
       onDoubleClick={onFoldToggle}
     >
-      <div className="font-medium text-sm px-2 flex items-center gap-2">
+      <div
+        className={cn(
+          "embeddr-panel-title font-medium text-sm px-1 pr-2 py-1 flex items-center gap-2 rounded-md transition-colors",
+          mergeActive && "bg-primary/15 ring-1 ring-primary/50",
+        )}
+        data-panel-drop-zone="tab"
+        data-panel-id={panelId}
+        title={mergeActive ? "Release to merge" : undefined}
+      >
         {titleIcon ? (
-          <span className="flex h-4 w-4 items-center justify-center">
+          <span className="embeddr-panel-title-icon flex h-4 w-4 items-center justify-center">
             {titleIcon}
           </span>
         ) : null}
-        {title}
+        <span className="embeddr-panel-title-text truncate max-w-40">
+          {title}
+        </span>
       </div>
-      <div className="flex items-center gap-1">
+      <div className="embeddr-panel-controls flex items-center gap-1">
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="icon-sm" className="h-6 w-6">
+            <Button
+              variant="ghost"
+              size="icon-sm"
+              className="embeddr-panel-button embeddr-panel-button-settings h-6 w-6"
+            >
               <Settings className="h-3 w-3" />
             </Button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="z-[1000000]">
+          <DropdownMenuContent
+            align="end"
+            className="embeddr-panel-menu z-1000000"
+          >
             <DropdownMenuLabel>Panel Settings</DropdownMenuLabel>
             <DropdownMenuSeparator />
 
@@ -141,7 +164,7 @@ export function PanelHeader({
           <Button
             variant="ghost"
             size="icon-sm"
-            className="h-6 w-6"
+            className="embeddr-panel-button embeddr-panel-button-minimize h-6 w-6"
             onClick={onMinimize}
           >
             <Minus className="h-4 w-4" />
@@ -151,7 +174,7 @@ export function PanelHeader({
         <Button
           variant="ghost"
           size="icon-sm"
-          className="h-6 w-6"
+          className="embeddr-panel-button embeddr-panel-button-fold h-6 w-6"
           onClick={onFoldToggle}
         >
           {isFolded ? (
@@ -170,7 +193,7 @@ export function PanelHeader({
         <Button
           variant="ghost"
           size="icon-sm"
-          className="h-6 w-6"
+          className="embeddr-panel-button embeddr-panel-button-close h-6 w-6"
           onClick={onClose}
         >
           <X className="h-4 w-4" />

@@ -12,6 +12,7 @@ export const PluginIntents = {
   REGISTER_CAPABILITY: "register_capability",
   REGISTER_ARTIFACT_TYPE: "register_artifact_type",
   ZEN_PANEL: "zen_panel",
+  ZEN_DOCK: "zen_dock",
   EVENT_LISTENER: "event_listener",
   DATABASE_ACCESS: "database_access",
   EXECUTION_HANDLER: "execution_handler",
@@ -186,6 +187,10 @@ export interface EmbeddrAPI {
     /** The base URL of the usage backend. */
     backendUrl: string;
     /**
+     * Get the current API key if configured.
+     */
+    getApiKey?: () => string | null;
+    /**
      * Upload an image to the backend.
      * @param file - The file object to upload.
      * @param prompt - Optional prompt metadata associated with the upload.
@@ -275,8 +280,46 @@ export interface EmbeddrAPI {
       ) => Promise<T>;
     };
   };
+  /**
+   * Scoped API for the current plugin instance.
+   * Automatically handles base URLs, authentication, and error wrapping.
+   */
+  plugin: {
+    /**
+     * Fetch a resource relative to the plugin's backend route.
+     * e.g. .fetch("/config") -> GET /api/v2/plugins/{pluginId}/config
+     */
+    fetch: (path: string, init?: RequestInit) => Promise<Response>;
+
+    /**
+     * Helper to fetch and parse JSON in one go.
+     * Throws on error status.
+     */
+    request: <T = any>(path: string, init?: RequestInit) => Promise<T>;
+  };
   plugins: {
     list: () => Promise<Array<any>>;
+    listLogos?: () => Promise<Record<string, string | null>>;
+    getComponents?: (location: string) => Array<{ pluginId: string; def: any }>;
+    getActions?: (location: string) => Array<{ pluginId: string; def: any }>;
+    getApi?: (pluginId: string) => EmbeddrAPI;
+  };
+  security?: {
+    overview?: () => Promise<{
+      auth_mode: string;
+      auth_enabled: boolean;
+      users: number;
+      roles: number;
+      api_keys: number;
+      current_user?: {
+        id: string;
+        username: string;
+        display_name: string;
+        avatar_url?: string | null;
+        is_admin?: boolean;
+      } | null;
+    }>;
+    operatorProfile?: () => Promise<any>;
   };
   /**
    * Event bus for inter-plugin communication.
@@ -474,12 +517,15 @@ export interface PluginComponentDef {
    * - `zen-toolbox-tab`: A tab in the left toolbox sidepanel.
    * - `zen-sidebar`: A persistent sidebar item.
    * - `zen-overlay`: A floating overlay window.
+   * - `zen-dock`: A sticky dock surface (bottom/top/side).
    * - `header-nav`: An icon in the top header.
    */
   location:
     | "zen-toolbox-tab"
+    | "zen-effect"
     | "zen-sidebar"
     | "zen-overlay"
+    | "zen-dock"
     | "header-nav"
     | "page";
   /** Label used for tabs or tooltips. */
@@ -498,6 +544,10 @@ export interface PluginComponentDef {
     hideHeader?: boolean;
     /** If true, the background is transparent. */
     transparent?: boolean;
+    /** Instance mode for overlay panels. */
+    instanceMode?: "single" | "multiple";
+    /** If true, panel is spawn-only and hidden from toolbox lists. */
+    spawnOnly?: boolean;
   };
 }
 

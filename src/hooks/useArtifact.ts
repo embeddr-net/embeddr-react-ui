@@ -23,19 +23,19 @@ export interface ArtifactUrls {
  */
 export const getArtifactUrls = (
   backendUrl: string,
-  id: string | number
+  id: string | number,
 ): ArtifactUrls => {
   const strId = id.toString();
 
   // Helper to switch to V2 API base
   const getV2Base = (url: string) => {
     if (url.endsWith("/v1")) {
-      return url.replace(/\/v1$/, "/v2");
+      return url.replace(/\/v1$/, "/v1");
     }
     if (url.endsWith("/v1/")) {
-      return url.replace(/\/v1\/$/, "/v2/");
+      return url.replace(/\/v1\/$/, "/v1/");
     }
-    return `${url}/v2`;
+    return `${url}/v1`;
   };
 
   const v2Base = getV2Base(backendUrl);
@@ -65,7 +65,7 @@ export const getArtifactUrls = (
  * @returns Object containing various URLs for the artifact
  */
 export const useArtifact = (
-  id: string | number | null | undefined
+  id: string | number | null | undefined,
 ): ArtifactUrls | null => {
   const { utils } = useEmbeddr();
 

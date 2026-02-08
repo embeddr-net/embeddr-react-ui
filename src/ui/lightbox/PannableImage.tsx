@@ -16,6 +16,7 @@ interface PannableImageProps {
   isOpen?: boolean;
   actions?: Array<PannableImageAction>;
   controlsBottomOffset?: number;
+  apiKey?: string;
 }
 
 export const PannableImage = ({
@@ -25,6 +26,7 @@ export const PannableImage = ({
   isOpen,
   actions = [],
   controlsBottomOffset = 16,
+  apiKey,
 }: PannableImageProps) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -40,6 +42,18 @@ export const PannableImage = ({
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
   const [isImageLoaded, setIsImageLoaded] = useState(false);
   const [showHelp, setShowHelp] = useState(false);
+
+  const appendApiKey = useCallback((input: string, key?: string) => {
+    if (!key || !input.startsWith("http")) return input;
+    try {
+      const url = new URL(input);
+      if (url.searchParams.has("api_key")) return input;
+      url.searchParams.set("api_key", key);
+      return url.toString();
+    } catch {
+      return input;
+    }
+  }, []);
 
   // Draw image on canvas
   const drawImage = useCallback(() => {
@@ -154,14 +168,20 @@ export const PannableImage = ({
     }
     imageRef.current = null;
 
+    let active = true;
+    let objectUrl: string | null = null;
+
+    const finalSrc = appendApiKey(src, apiKey);
+
     if (mediaType === "video") {
       const vid = document.createElement("video");
-      vid.src = src;
+      vid.src = finalSrc;
       vid.loop = true;
       vid.muted = true;
       vid.playsInline = true;
       vid.autoplay = true;
       vid.onloadedmetadata = () => {
+        if (!active) return;
         imageRef.current = vid;
         setIsImageLoaded(true);
         // Reset zoom/pan on new media
@@ -176,8 +196,9 @@ export const PannableImage = ({
       };
     } else {
       const img = new Image();
-      img.src = src;
+      img.src = finalSrc;
       img.onload = () => {
+        if (!active) return;
         imageRef.current = img;
         setIsImageLoaded(true);
         // Reset zoom/pan on new image
@@ -189,8 +210,16 @@ export const PannableImage = ({
         setRotation(0);
         handleResize();
       };
+      img.onerror = () => {
+        console.error("Failed to load image via proxy or direct", finalSrc);
+      };
     }
-  }, [src, mediaType, handleResize]);
+
+    return () => {
+      active = false;
+      if (objectUrl) URL.revokeObjectURL(objectUrl);
+    };
+  }, [src, mediaType, handleResize, apiKey, appendApiKey]);
 
   // Animation loop for video
   useEffect(() => {
@@ -311,7 +340,7 @@ export const PannableImage = ({
         if (!t1 || !t2) return;
         const dist = Math.hypot(
           t1.clientX - t2.clientX,
-          t1.clientY - t2.clientY
+          t1.clientY - t2.clientY,
         );
 
         const scale = dist / touchState.initialDistance;
@@ -336,7 +365,7 @@ export const PannableImage = ({
         setDragStart({ x: t.clientX, y: t.clientY });
       }
     },
-    [touchState, isDragging, dragStart]
+    [touchState, isDragging, dragStart],
   );
 
   const handleTouchEnd = useCallback(() => {
@@ -359,7 +388,7 @@ export const PannableImage = ({
         setDragStart({ x: e.clientX, y: e.clientY });
       }
     },
-    [isDragging, dragStart]
+    [isDragging, dragStart],
   );
 
   const handleMouseUp = useCallback(() => {
@@ -456,7 +485,7 @@ export const PannableImage = ({
           </Button>
         ))}
 
-        <div className="h-8 ring-1 ring-foreground/10 bg-background/90 backdrop-blur-sm px-3 py-1.5  text-xs text-muted-foreground pointer-events-none border border-border/50 transition-opacity duration-0 items-center justify-center flex">
+        <div className="rounded-md h-8 ring-1 ring-foreground/10 bg-background/90 backdrop-blur-sm px-3 py-1.5  text-xs text-muted-foreground pointer-events-none border border-border/50 transition-opacity duration-0 items-center justify-center flex">
           {Math.round(zoom * 100)}%
         </div>
 
@@ -465,14 +494,14 @@ export const PannableImage = ({
           <div
             onMouseEnter={() => setShowHelp(true)}
             onMouseLeave={() => setShowHelp(false)}
-            className="w-8 h-8 ring-1 ring-foreground/10 bg-background/90 backdrop-blur-sm  border border-border/50 flex items-center justify-center cursor-help transition-all duration-0 hover:bg-primary/20"
+            className="rounded-md w-8 h-8 ring-1 ring-foreground/10 bg-background/90 backdrop-blur-sm  border border-border/50 flex items-center justify-center cursor-help transition-all duration-0 hover:bg-primary/20"
           >
             <span className="text-xs text-muted-foreground font-medium">?</span>
           </div>
 
           {/* Help tooltip */}
           {showHelp && (
-            <div className="absolute bottom-full right-0 mb-2 w-64 bg-background/95 backdrop-blur-sm border border-border  p-3 text-xs text-muted-foreground shadow-lg">
+            <div className="absolute bottom-full right-0 mb-2 w-64 bg-background/95 backdrop-blur-sm border border-border  p-3 text-xs text-muted-foreground shadow-lg rounded-md">
               <div className="space-y-1">
                 <div>
                   <span className="text-foreground">Scroll/Pinch:</span> Zoom

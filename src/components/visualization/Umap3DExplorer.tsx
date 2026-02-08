@@ -10,6 +10,8 @@ import {
   Loader2,
   ScatterChart,
   X,
+  Grid,
+  Focus,
 } from "lucide-react";
 import { Button } from "../../ui/button";
 import type { Explorer3DProps, Point3D, SearchQueryMarker } from "./types";
@@ -44,7 +46,7 @@ const PointCloud = ({
   onClick: (
     index: number,
     point: Point3D,
-    event: ThreeEvent<MouseEvent>
+    event: ThreeEvent<MouseEvent>,
   ) => void;
   size?: number;
   opacity?: number;
@@ -85,7 +87,7 @@ const PointCloud = ({
         color.setRGB(
           Math.max(0, Math.min(1, nx)),
           Math.max(0, Math.min(1, ny)),
-          Math.max(0, Math.min(1, nz))
+          Math.max(0, Math.min(1, nz)),
         );
       }
 
@@ -187,7 +189,7 @@ const ImageSprite = ({
         if (active) {
           console.warn(`Failed to load thumbnail for ${point.id}:`, err);
         }
-      }
+      },
     );
     return () => {
       active = false;
@@ -618,6 +620,8 @@ export const Umap3DExplorer = ({
   const [cameraTarget, setCameraTarget] = useState<THREE.Vector3 | null>(null);
   const [showImages, setShowImages] = useState(false);
   const lastPointsLengthRef = useRef(0);
+  const canShowImages = points.length <= 5000;
+  const showPointCloud = !showImages;
 
   // Unified selection and auto-centering logic
   useEffect(() => {
@@ -667,8 +671,8 @@ export const Umap3DExplorer = ({
           new THREE.Vector3(
             sumX / validCount,
             sumY / validCount,
-            sumZ / validCount
-          )
+            sumZ / validCount,
+          ),
         );
       }
     }
@@ -681,7 +685,7 @@ export const Umap3DExplorer = ({
   const handlePointClick = (
     index: number,
     point: Point3D,
-    event?: ThreeEvent<MouseEvent>
+    event?: ThreeEvent<MouseEvent>,
   ) => {
     // Normal click: Select point (CameraController will lerp smoothly)
     setSelectedIndices([index]);
@@ -771,15 +775,17 @@ export const Umap3DExplorer = ({
           isActive={isActive}
         />
 
-        <PointCloud
-          points={points}
-          onHover={(_, point) => setHoveredPoint(point)}
-          onClick={handlePointClick}
-          size={showImages ? pointSize * 0.5 : pointSize}
-          opacity={showImages ? 0.3 : 0.8}
-        />
+        {showPointCloud && (
+          <PointCloud
+            points={points}
+            onHover={(_, point) => setHoveredPoint(point)}
+            onClick={handlePointClick}
+            size={pointSize}
+            opacity={0.8}
+          />
+        )}
 
-        {showImages && points.length <= 5000 && (
+        {showImages && canShowImages && (
           <ImageNodes
             points={points}
             getImageUrl={getImageUrl}
@@ -790,13 +796,16 @@ export const Umap3DExplorer = ({
             size={pointSize}
           />
         )}
-
-        <HighlightPoint point={hoveredPoint} size={pointSize} />
-        <SelectedPoints
-          points={points}
-          selectedIndices={selectedIndices}
-          size={pointSize}
-        />
+        {!showImages && (
+          <>
+            <HighlightPoint point={hoveredPoint} size={pointSize} />
+            <SelectedPoints
+              points={points}
+              selectedIndices={selectedIndices}
+              size={pointSize}
+            />
+          </>
+        )}
         <ConnectionLines
           points={points}
           connections={connections}
@@ -812,24 +821,47 @@ export const Umap3DExplorer = ({
           {count ? count.toLocaleString() : points.length.toLocaleString()}{" "}
           points
         </div>
+      </div>
+
+      <div className="absolute top-4 right-4 flex gap-2 pointer-events-auto">
         <Button
-          variant="outline"
+          variant={showImages ? "default" : "outline"}
           size="sm"
-          className={`pointer-events-auto h-8 gap-2 bg-black/50 backdrop-blur border-white/10 text-white hover:bg-black/70 ${
-            showImages ? "ring-1 ring-primary" : ""
-          }`}
-          onClick={() => setShowImages(!showImages)}
+          className="h-8 gap-2"
+          onClick={() => setShowImages((prev) => !prev)}
           title={
-            points.length > 5000
-              ? "Too many points to show images"
-              : "Toggle image thumbnails"
+            canShowImages
+              ? "Toggle image thumbnails"
+              : "Too many points to show images"
           }
-          disabled={points.length > 5000}
+          disabled={!canShowImages}
         >
           <ImageIcon className="w-4 h-4" />
           <span className="text-[10px] uppercase font-bold">
-            {showImages ? "Hide Images" : "View Images"}
+            {showImages ? "Images On" : "Images Off"}
           </span>
+        </Button>
+        <Button
+          variant="outline"
+          size="sm"
+          className="h-8 gap-2"
+          onClick={() => setCameraTarget(null)}
+          disabled={!cameraTarget}
+          title="Reset camera target"
+        >
+          <Focus className="w-4 h-4" />
+          <span className="text-[10px] uppercase font-bold">Reset</span>
+        </Button>
+        <Button
+          variant="outline"
+          size="sm"
+          className="h-8 gap-2"
+          onClick={() => setSelectedIndices([])}
+          disabled={!selectedIndices.length}
+          title="Clear selection"
+        >
+          <Grid className="w-4 h-4" />
+          <span className="text-[10px] uppercase font-bold">Clear</span>
         </Button>
       </div>
 

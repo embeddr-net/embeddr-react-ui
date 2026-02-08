@@ -12,12 +12,14 @@ function ScrollArea({
   viewportClassName,
   variant = "default",
   orientation = "vertical",
+  hideScrollbars = false,
   ...props
 }: React.ComponentProps<typeof ScrollAreaPrimitive.Root> & {
   viewportRef?: React.RefObject<HTMLDivElement | null>;
   viewportClassName?: string;
   variant?: "default" | "left-border";
   orientation?: "vertical" | "horizontal" | "both";
+  hideScrollbars?: boolean;
 }) {
   return (
     <ScrollAreaPrimitive.Root
@@ -25,24 +27,28 @@ function ScrollArea({
       className={cn("relative", className)}
       {...props}
     >
-      <ScrollAreaPrimitive.Viewport
-        data-slot="scroll-area-viewport"
-        ref={viewportRef}
-        className={cn(
-          "size-full focus-visible:ring-ring/50 transition-[color,box-shadow]",
-          viewportClassName,
-        )}
-      >
-        {children}
-      </ScrollAreaPrimitive.Viewport>
+      <div className="size-full overflow-hidden rounded-md">
+        <ScrollAreaPrimitive.Viewport
+          data-slot="scroll-area-viewport"
+          ref={viewportRef}
+          className={cn(
+            "size-full overflow-auto focus-visible:ring-ring/50 transition-[color,box-shadow]",
+            viewportClassName,
+          )}
+        >
+          {children}
+        </ScrollAreaPrimitive.Viewport>
+      </div>
 
-      {(orientation === "vertical" || orientation === "both") && (
-        <ScrollBar variant={variant} orientation="vertical" />
-      )}
-      {(orientation === "horizontal" || orientation === "both") && (
-        <ScrollBar variant={variant} orientation="horizontal" />
-      )}
-      <ScrollAreaPrimitive.Corner />
+      {!hideScrollbars &&
+        (orientation === "vertical" || orientation === "both") && (
+          <ScrollBar variant={variant} orientation="vertical" />
+        )}
+      {!hideScrollbars &&
+        (orientation === "horizontal" || orientation === "both") && (
+          <ScrollBar variant={variant} orientation="horizontal" />
+        )}
+      {!hideScrollbars && <ScrollAreaPrimitive.Corner />}
     </ScrollAreaPrimitive.Root>
   );
 }

@@ -15,22 +15,24 @@ export interface ImageDialogContextType {
       | any,
     initialIndex?: number,
     actions?: Array<ImageAction>,
-    imagePath?: string
+    imagePath?: string,
   ) => void;
   // Allows external callers (like Search) to update the shared gallery images
   setGalleryImages: (
     images: Array<GalleryImage>,
     replace?: boolean,
     newIndex?: number,
-    totalImages?: number
+    totalImages?: number,
   ) => void;
   closeImage: () => void;
   galleries: Array<Gallery>;
   currentGallery: GalleryWithTotal | null;
   currentImageIndex: number;
   isOpen: boolean;
+  apiKey?: string;
+  setApiKey?: (key: string) => void;
 }
 
 export const ImageDialogContext = createContext<ImageDialogContextType | null>(
-  null
+  null,
 );

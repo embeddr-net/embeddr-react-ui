@@ -1,5 +1,5 @@
 export interface PromptImage {
-  id: number | string;
+  id: string;
   url: string;
   image_url: string; // Added for compatibility
   thumb_url?: string; // Added for compatibility

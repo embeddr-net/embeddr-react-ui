@@ -3,6 +3,7 @@ import { WebSocketContext } from "../context/WebSocketContext";
 import { useEmbeddrAPI } from "../context/EmbeddrContext";
 import type {
   WelcomeMsg,
+  ClientHelloMsg,
   ClientConnectedMsg,
   ClientDisconnectedMsg,
 } from "../types/websocket";
@@ -47,6 +48,10 @@ export const WebSocketProvider: React.FC<{ children: React.ReactNode }> = ({
       setMyClientId(data.client_id);
       setIsConnected(true);
     };
+    const onHello = (data: ClientHelloMsg["data"]) => {
+      setMyClientId(data.client_id);
+      setIsConnected(true);
+    };
     const onConnect = (data: ClientConnectedMsg["data"]) => {
       setClients((prev) => {
         if (prev.includes(data.client_id)) return prev;
@@ -58,12 +63,16 @@ export const WebSocketProvider: React.FC<{ children: React.ReactNode }> = ({
     };
 
     const unsubWelcome = api.events.on("welcome", onWelcome);
+    const unsubHello = api.events.on("client_hello", onHello);
     const unsubConnect = api.events.on("client_connected", onConnect);
     const unsubDisconnect = api.events.on("client_disconnected", onDisconnect);
 
     return () => {
       if (typeof unsubWelcome === "function") unsubWelcome();
       else api.events.off("welcome", onWelcome);
+
+      if (typeof unsubHello === "function") unsubHello();
+      else api.events.off("client_hello", onHello);
 
       if (typeof unsubConnect === "function") unsubConnect();
       else api.events.off("client_connected", onConnect);

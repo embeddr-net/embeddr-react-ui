@@ -15,6 +15,10 @@ export interface PanelState {
   isPinned: boolean;
   isFullscreen: boolean; // Reserved for future
   title: string;
+  hideHeader: boolean;
+  showTitle: boolean;
+  isHeaderHidden: boolean;
+  headerHeight: number;
   close: () => void;
   collapse: (collapsed?: boolean) => void;
   pin: (pinned?: boolean) => void;
@@ -54,6 +58,8 @@ export interface DraggablePanelProps {
   zIndex?: number;
   onFocus?: () => void;
   onMouseDown?: (e: React.MouseEvent) => void;
+  onMouseEnter?: (e: React.MouseEvent) => void;
+  onMouseLeave?: (e: React.MouseEvent) => void;
   showTitle?: boolean;
   onShowTitleChange?: (show: boolean) => void;
   hideHeader?: boolean;
@@ -61,6 +67,7 @@ export interface DraggablePanelProps {
   isActive?: boolean;
   onMinimize?: () => void;
   additionalSettingsItems?: React.ReactNode;
+  mergeActive?: boolean;
   /**
    * @deprecated use additionalSettingsItems
    */
@@ -96,6 +103,8 @@ export function DraggablePanel({
   zIndex,
   onFocus,
   onMouseDown,
+  onMouseEnter,
+  onMouseLeave,
   onMinimize,
   showTitle: controlledShowTitle,
   onShowTitleChange,
@@ -104,6 +113,7 @@ export function DraggablePanel({
   isActive = false,
   headerEndContent,
   additionalSettingsItems,
+  mergeActive,
   onResizeEnd,
 }: DraggablePanelProps) {
   // Internal state for uncontrolled mode
@@ -172,7 +182,8 @@ export function DraggablePanel({
     ? false
     : (controlledShowTitle ?? internalShowTitle);
 
-  const headerHeight = hideHeader || !showTitle ? 16 : 41;
+  // Forced height in PanelHeader is h-[42px]
+  const headerHeight = hideHeader || !showTitle ? 16 : 42;
 
   const setShowTitle = (show: boolean) => {
     setInternalShowTitle(show);
@@ -435,9 +446,10 @@ export function DraggablePanel({
   // KEY FIX: Calculate visual top.
   // If title is bottom AND we are NOT folded (so content is visible),
   // we shift the DIV up so the header lands at `position.y`.
+  // We add +2 to account for the top and bottom borders of the container (1px each).
   const visualY =
     !isFolded && titlePosition === "bottom"
-      ? position.y - (size.height - headerHeight)
+      ? position.y - (size.height - headerHeight) + 2
       : position.y;
 
   const contextValue: PanelState = {
@@ -447,6 +459,10 @@ export function DraggablePanel({
     isPinned: !!pinned,
     isFullscreen: false,
     title,
+    hideHeader,
+    showTitle,
+    isHeaderHidden: hideHeader || !showTitle,
+    headerHeight,
     close: onClose,
     collapse: (v) => setIsFolded(v ?? !isFolded),
     pin: (v) => onPinChange?.(v ?? !pinned),
@@ -456,7 +472,7 @@ export function DraggablePanel({
   const hiddenTitleHandle = (!showTitle || hideHeader) && (
     <div
       className={cn(
-        "absolute top-0 left-0 right-0 h-3 z-50 cursor-move transition-colors",
+        "embeddr-panel-hidden-title-handle absolute top-0 left-0 right-0 h-3 z-50 cursor-move transition-colors",
         !transparent && "hover:bg-primary/20",
         isFolded && "h-4 bg-primary/10",
       )}
@@ -480,8 +496,12 @@ export function DraggablePanel({
   return (
     <div
       ref={panelRef}
+      data-panel-role="panel"
+      data-panel-id={id}
+      data-panel-title={title}
+      data-panel-header-hidden={hideHeader || !showTitle}
       className={cn(
-        "select-none fixed flex shadow-xl border bg-background/95 backdrop-blur supports-backdrop-filter:bg-background/60 transition-colors duration-200 rounded-lg overflow-hidden",
+        "embeddr-panel-shell select-none fixed flex shadow-xl border bg-background/95 backdrop-blur supports-backdrop-filter:bg-background/60 transition-colors duration-200 rounded-lg overflow-hidden",
         "focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:border focus-visible:border-primary/30",
         transparent &&
           "bg-transparent border-none shadow-none backdrop-blur-none",
@@ -512,8 +532,14 @@ export function DraggablePanel({
           handleMouseDown(e);
         }
       }}
-      onMouseEnter={(e) => e.stopPropagation()}
-      onMouseLeave={(e) => e.stopPropagation()}
+      onMouseEnter={(e) => {
+        e.stopPropagation();
+        onMouseEnter?.(e);
+      }}
+      onMouseLeave={(e) => {
+        e.stopPropagation();
+        onMouseLeave?.(e);
+      }}
       tabIndex={-1}
     >
       {hiddenTitleHandle}
@@ -522,6 +548,8 @@ export function DraggablePanel({
         <PanelHeader
           title={title}
           titleIcon={titleIcon}
+          panelId={id}
+          mergeActive={mergeActive}
           pinned={!!pinned}
           titlePosition={titlePosition}
           showTitle={showTitle}
@@ -540,7 +568,12 @@ export function DraggablePanel({
 
       {/* Content */}
       {!isFolded && (
-        <div className="flex-1 min-h-0 overflow-hidden relative flex flex-col">
+        <div
+          className="embeddr-panel-body flex-1 min-h-0 overflow-auto overscroll-contain relative flex flex-col pointer-events-auto touch-pan-y"
+          onWheel={(event) => {
+            event.stopPropagation();
+          }}
+        >
           <PanelContext.Provider value={contextValue}>
             {children}
           </PanelContext.Provider>

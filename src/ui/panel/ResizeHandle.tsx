@@ -15,11 +15,11 @@ export function ResizeHandle({
   return (
     <div
       className={cn(
-        "absolute bottom-0 right-0 w-4 h-4 cursor-se-resize resize-handle flex items-center justify-center z-50",
+        "embeddr-panel-resize-handle absolute bottom-0 right-0 w-4 h-4 cursor-se-resize resize-handle flex items-center justify-center z-50",
         transparent
           ? "opacity-0 hover:opacity-100"
           : "opacity-50 hover:opacity-100",
-        className
+        className,
       )}
       onMouseDown={onMouseDown}
     >

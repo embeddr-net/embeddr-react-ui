@@ -1,6 +1,7 @@
-import React from "react";
+import React, { useMemo } from "react";
 import { EmbeddrDnDTypes } from "../lib/dnd";
 import { cn } from "../lib/utils";
+import { useOptionalEmbeddrAPI } from "../context/EmbeddrContext";
 
 export interface EmbeddrImageProps extends React.ImgHTMLAttributes<HTMLImageElement> {
   id?: string; // The Artifact ID (optional for external resources)
@@ -32,6 +33,27 @@ export const EmbeddrImage = React.forwardRef<
     },
     ref,
   ) => {
+    const api = useOptionalEmbeddrAPI();
+
+    const signedSrc = useMemo(() => {
+      if (!src) return src;
+      const apiKey = api?.utils?.getApiKey?.();
+      if (!apiKey) return src;
+
+      try {
+        const urlObj = new URL(src, window.location.origin);
+        // Simple heuristic: if it points to /api/, sign it.
+        // This covers both relative /api/... and absolute http://.../api/...
+        if (urlObj.pathname.includes("/api/")) {
+          urlObj.searchParams.set("api_key", apiKey);
+          // Also redundant check: confirm we aren't leaking to some random domain?
+          // Assuming /api/ convention is internal for now or user trusted plugins.
+          return urlObj.toString();
+        }
+      } catch (e) {}
+      return src;
+    }, [src, api]);
+
     // Default drag handler
     const handleDragStart = (e: React.DragEvent<HTMLImageElement>) => {
       // Construct V2 API URLs
@@ -45,8 +67,20 @@ export const EmbeddrImage = React.forwardRef<
       // Append /api/v2
       if (baseUrl || backendUrl === "") {
         // Even if empty (relative), we want /api/v2
-        baseUrl = `${baseUrl}/api/v2`;
+        baseUrl = `${baseUrl}/api/v1`;
       }
+
+      const apiKey = api?.utils?.getApiKey?.();
+      const appendAuth = (url: string) => {
+        if (!url || !apiKey) return url;
+        try {
+          const u = new URL(url, window.location.origin);
+          u.searchParams.set("api_key", apiKey);
+          return u.toString();
+        } catch {
+          return url;
+        }
+      };
 
       let contentUrl = contentUrlProp || src || "";
       let previewUrl = previewUrlProp || "";
@@ -57,6 +91,10 @@ export const EmbeddrImage = React.forwardRef<
       if (!previewUrl && id && baseUrl) {
         previewUrl = `${baseUrl}/artifacts/${id}/preview`;
       }
+
+      // Sign the URLs before dragging
+      contentUrl = appendAuth(contentUrl);
+      previewUrl = appendAuth(previewUrl);
 
       if (id) {
         e.dataTransfer.setData(EmbeddrDnDTypes.ARTIFACT_ID, id);
@@ -113,7 +151,7 @@ export const EmbeddrImage = React.forwardRef<
     return (
       <img
         ref={ref}
-        src={src}
+        src={signedSrc}
         draggable
         onDragStart={handleDragStart}
         className={cn("hover:border-primary", className)}

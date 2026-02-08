@@ -13,3 +13,4 @@ export { useConnectedClients } from "./useConnectedClients";
 export { usePluginSetting } from "./usePluginSetting";
 export { usePluginStorage } from "./usePluginStorage";
 export { usePluginDrop } from "./usePluginDrop";
+export { usePanelStack } from "./usePanelStack";

@@ -1,6 +1,7 @@
 import { ChevronDown, ChevronUp, Info } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import type { Gallery } from "../../types/gallery";
+import { AuthorizedImg } from "../AuthorizedImg";
 
 interface ImageThumbnailStripProps {
   gallery: Gallery;
@@ -8,6 +9,7 @@ interface ImageThumbnailStripProps {
   onImageChange: (index: number) => void;
   isOpen: boolean;
   onToggle: () => void;
+  apiKey?: string;
 }
 
 export const ImageThumbnailStrip = ({
@@ -16,6 +18,7 @@ export const ImageThumbnailStrip = ({
   onImageChange,
   isOpen,
   onToggle,
+  apiKey,
 }: ImageThumbnailStripProps) => {
   const [showInfo, setShowInfo] = useState(false);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
@@ -46,8 +49,9 @@ export const ImageThumbnailStrip = ({
         <div className="flex items-center gap-3">
           {currentImage && (
             <>
-              <img
+              <AuthorizedImg
                 src={currentImage.thumbnail || currentImage.src}
+                apiKey={apiKey}
                 alt={currentImage.title || `Image ${currentIndex + 1}`}
                 className="w-10 h-10 object-cover rounded"
               />
@@ -99,8 +103,9 @@ export const ImageThumbnailStrip = ({
                     : "opacity-70 hover:opacity-100 hover:scale-105"
                 }`}
               >
-                <img
+                <AuthorizedImg
                   src={img.thumbnail || img.src}
+                  apiKey={apiKey}
                   alt={img.title || `Thumbnail ${idx + 1}`}
                   className="h-20 w-auto object-cover rounded-sm"
                   loading="lazy"
