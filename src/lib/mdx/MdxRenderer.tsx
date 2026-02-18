@@ -2,8 +2,8 @@ import React from "react";
 import { evaluate } from "@mdx-js/mdx";
 import * as runtime from "react/jsx-runtime";
 import remarkGfm from "remark-gfm";
-import { ScrollArea } from "../../ui/scroll-area";
-import { Spinner } from "../../ui/spinner";
+import { ScrollArea } from "../../components/ui/scroll-area";
+import { Spinner } from "../../components/ui/spinner";
 import { cn } from "../utils";
 import { mdxComponents } from "./mdx-components";
 

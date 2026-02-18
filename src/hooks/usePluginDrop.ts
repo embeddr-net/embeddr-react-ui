@@ -43,7 +43,7 @@ export function usePluginDrop({
       if (stopPropagation) e.stopPropagation();
       setIsDragOver(true);
     },
-    [stopPropagation]
+    [stopPropagation],
   );
 
   const handleDragLeave = React.useCallback(
@@ -52,7 +52,7 @@ export function usePluginDrop({
       if (stopPropagation) e.stopPropagation();
       setIsDragOver(false);
     },
-    [stopPropagation]
+    [stopPropagation],
   );
 
   const handleDrop = React.useCallback(
@@ -118,7 +118,7 @@ export function usePluginDrop({
         }
       }
     },
-    [onArtifact, onFile, onUrl, onText, stopPropagation]
+    [onArtifact, onFile, onUrl, onText, stopPropagation],
   );
 
   return {

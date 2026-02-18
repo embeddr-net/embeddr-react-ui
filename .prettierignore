@@ -1,0 +1,6 @@
+.archive
+dist
+build
+.vite
+coverage
+pnpm-lock.yaml

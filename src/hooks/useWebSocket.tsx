@@ -20,24 +20,21 @@ type WebSocketCallback<T> = (data: T) => void;
  * @param event - The event name to subscribe to.
  * @param callback - The callback to execute when the event occurs.
  */
-export function useWebSocketEvent<K extends keyof EmbeddrEventMap>(
-  event: K,
-  callback: WebSocketCallback<EmbeddrEventMap[K]>
+export function useWebSocketEvent<TEvent extends keyof EmbeddrEventMap>(
+  event: TEvent,
+  callback: WebSocketCallback<EmbeddrEventMap[TEvent]>,
 ) {
   const api = useEmbeddrAPI();
-  const savedCallback = useRef(callback);
+  const savedCallback =
+    useRef<WebSocketCallback<EmbeddrEventMap[TEvent]>>(callback);
 
   useEffect(() => {
-    // @ts-ignore - Generic variance issues with refs are tricky but runtime is safe
     savedCallback.current = callback;
   }, [callback]);
 
   useEffect(() => {
-    const handler = (data: EmbeddrEventMap[K]) => {
-      if (savedCallback.current) {
-        // @ts-ignore
-        savedCallback.current(data);
-      }
+    const handler = (data: EmbeddrEventMap[TEvent]) => {
+      savedCallback.current(data);
     };
 
     // Subscribe
@@ -47,12 +44,7 @@ export function useWebSocketEvent<K extends keyof EmbeddrEventMap>(
     return () => {
       // If the event bus implementation adheres to returning cleanup, use it.
       // Otherwise we might need to call api.events.off(event, handler)
-      if (typeof unsubscribe === "function") {
-        unsubscribe();
-      } else {
-        // Fallback if the return type isn't consistent at runtime (though typed as such)
-        api.events.off(event, handler);
-      }
+      unsubscribe();
     };
   }, [api, event]);
 }
@@ -64,7 +56,7 @@ export function useWebSocketEvent<K extends keyof EmbeddrEventMap>(
  * Use this for debugging or monitoring multiple event types.
  */
 export function useWebSocketStream(
-  callback: WebSocketCallback<EmbeddrMessage>
+  callback: WebSocketCallback<EmbeddrMessage>,
 ) {
   const api = useEmbeddrAPI();
   const savedCallback = useRef(callback);
@@ -75,19 +67,13 @@ export function useWebSocketStream(
 
   useEffect(() => {
     const handler = (msg: EmbeddrMessage) => {
-      if (savedCallback.current) {
-        savedCallback.current(msg);
-      }
+      savedCallback.current(msg);
     };
 
     const unsubscribe = api.events.on("websocket:message", handler);
 
     return () => {
-      if (typeof unsubscribe === "function") {
-        unsubscribe();
-      } else {
-        api.events.off("websocket:message", handler);
-      }
+      unsubscribe();
     };
   }, [api]);
 }

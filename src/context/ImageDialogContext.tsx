@@ -5,14 +5,22 @@ export interface GalleryWithTotal extends Gallery {
   totalImages?: number;
 }
 
+export type ImageDialogOpenContext =
+  | string
+  | {
+      images: Array<GalleryImage>;
+      id?: string;
+      name?: string;
+      [key: string]: unknown;
+    }
+  | Record<string, unknown>
+  | null;
+
 export interface ImageDialogContextType {
   // openImage: src, then optional galleryId OR an inline gallery-like context (images[])
   openImage: (
     imageSrc: string,
-    galleryIdOrContext?:
-      | string
-      | { images: Array<GalleryImage>; id?: string; name?: string }
-      | any,
+    galleryIdOrContext?: ImageDialogOpenContext,
     initialIndex?: number,
     actions?: Array<ImageAction>,
     imagePath?: string,

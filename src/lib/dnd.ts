@@ -18,7 +18,10 @@ export const EmbeddrDnDTypes = {
   // Metadata
   ARTIFACT_TYPE: "application/embeddr-artifact-type", // 'image' | 'video' | 'audio' | 'model'
   PLUGIN_SOURCE: "application/embeddr-plugin-source",
-};
+} as const;
+
+export type EmbeddrDnDTypeKey = keyof typeof EmbeddrDnDTypes;
+export type EmbeddrDnDMimeType = (typeof EmbeddrDnDTypes)[EmbeddrDnDTypeKey];
 
 // Helper for type-safe data transfer handling
 export interface DragData {

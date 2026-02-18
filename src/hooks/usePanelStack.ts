@@ -10,10 +10,10 @@ type PanelZIndexOptions = {
 };
 
 export function usePanelStack(
-  ids: string[],
+  ids: Array<string>,
   { baseZIndex = 20, pinnedZIndex = 1000 }: PanelStackOptions = {},
 ) {
-  const [panelOrder, setPanelOrder] = React.useState<string[]>(() => ids);
+  const [panelOrder, setPanelOrder] = React.useState<Array<string>>(() => ids);
 
   React.useEffect(() => {
     setPanelOrder((prev) => {

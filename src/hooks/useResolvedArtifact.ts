@@ -1,6 +1,5 @@
 import { useEffect, useState } from "react";
 import { useEmbeddr } from "./useEmbeddr";
-import { getArtifactUrls } from "./useArtifact";
 
 export interface ResolvedArtifact {
   id?: string;
@@ -18,7 +17,7 @@ export function useResolvedArtifact(input: {
   hintType?: string;
   adapterId?: string;
 }) {
-  const { utils, resources } = useEmbeddr();
+  const { resources } = useEmbeddr();
   const [resolved, setResolved] = useState<ResolvedArtifact | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -33,38 +32,13 @@ export function useResolvedArtifact(input: {
 
       setLoading(true);
       try {
-        if (resources?.resolve) {
-          const out = await resources.resolve({
-            artifactId,
-            url,
-            hintType,
-            adapterId,
-          });
-          if (alive) setResolved(out ?? null);
-          return;
-        }
-
-        if (artifactId) {
-          const fallback = getArtifactUrls(utils.backendUrl, artifactId);
-          if (alive)
-            setResolved({
-              id: fallback.id,
-              type: hintType,
-              content_url: fallback.fileUrl,
-              preview_url: fallback.previewUrl,
-            });
-          return;
-        }
-
-        if (url && alive) {
-          setResolved({
-            id: artifactId,
-            type: hintType,
-            content_url: url,
-            preview_url: url,
-            url,
-          });
-        }
+        const out = await resources.resolve({
+          artifactId,
+          url,
+          hintType,
+          adapterId,
+        });
+        if (alive) setResolved(out);
       } finally {
         if (alive) setLoading(false);
       }
@@ -74,7 +48,7 @@ export function useResolvedArtifact(input: {
     return () => {
       alive = false;
     };
-  }, [input, resources, utils.backendUrl]);
+  }, [input, resources]);
 
   return { resolved, loading };
 }

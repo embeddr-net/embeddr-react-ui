@@ -5,10 +5,13 @@ import {
   DialogContent,
   DialogDescription,
   DialogTitle,
-} from "../ui/index";
-import { LightboxViewer } from "../ui/lightbox/index";
+} from "../components/ui";
+import { LightboxViewer } from "../components/embeddr/lightbox";
 import { ImageDialogContext } from "../context/ImageDialogContext";
-import type { GalleryWithTotal } from "../context/ImageDialogContext";
+import type {
+  GalleryWithTotal,
+  ImageDialogOpenContext,
+} from "../context/ImageDialogContext";
 import type { ReactNode } from "react";
 import type { Gallery, GalleryImage, ImageAction } from "../types/gallery";
 
@@ -26,10 +29,28 @@ export const ImageDialogProvider = ({ children }: { children: ReactNode }) => {
   const [actions, setActions] = useState<Array<ImageAction>>([]);
   const [apiKey, setApiKey] = useState<string>("");
 
+  const isInlineGalleryContext = (
+    value: ImageDialogOpenContext | undefined,
+  ): value is {
+    images: Array<GalleryImage>;
+    id?: string;
+    name?: string;
+    thumbnail?: string;
+    totalImages?: number;
+    fetchMore?: GalleryWithTotal["fetchMore"];
+  } => {
+    return (
+      typeof value === "object" &&
+      value !== null &&
+      "images" in value &&
+      Array.isArray(value.images)
+    );
+  };
+
   const openImage = useCallback(
     (
       src: string,
-      galleryOrMetadata?: any,
+      galleryOrMetadata?: ImageDialogOpenContext,
       initialIndex?: number,
       customActions: Array<ImageAction> = [],
       imagePath?: string,
@@ -37,11 +58,18 @@ export const ImageDialogProvider = ({ children }: { children: ReactNode }) => {
       setImageSrc(src);
 
       // Determine if we have a real gallery or just a single image context
-      const isGallery =
-        galleryOrMetadata && Array.isArray(galleryOrMetadata.images);
+      const isGallery = isInlineGalleryContext(galleryOrMetadata);
 
       const gallery: GalleryWithTotal = isGallery
-        ? (galleryOrMetadata as GalleryWithTotal)
+        ? {
+            id: galleryOrMetadata.id || "inline-gallery",
+            name: galleryOrMetadata.name || "Image Viewer",
+            thumbnail: galleryOrMetadata.thumbnail || src,
+            images: galleryOrMetadata.images,
+            totalImages:
+              galleryOrMetadata.totalImages || galleryOrMetadata.images.length,
+            fetchMore: galleryOrMetadata.fetchMore,
+          }
         : {
             id: "single-image",
             name: "Image Viewer",
@@ -170,7 +198,7 @@ export const ImageDialogProvider = ({ children }: { children: ReactNode }) => {
 
   const setGalleryImages = useCallback(
     (
-      images: Array<GalleryImage> | any,
+      images: Array<GalleryImage>,
       replace = true,
       newIndex?: number,
       totalImages?: number,

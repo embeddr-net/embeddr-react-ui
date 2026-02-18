@@ -27,7 +27,7 @@ const toArray = (value?: string | Array<string>) => {
 const getPathValue = (obj: any, path: string) => {
   if (!obj || !path) return undefined;
   const parts = path.split(".");
-  let cur = obj as any;
+  let cur = obj;
   for (const part of parts) {
     if (cur == null) return undefined;
     const key = part.trim();
@@ -105,7 +105,7 @@ export const resolveReactiveConfig = (params: {
   const url = params.url || "";
 
   for (const entry of registry) {
-    const match = entry.match || {};
+    const match = entry.match;
     if (match.type && match.type.toLowerCase() !== type) {
       continue;
     }

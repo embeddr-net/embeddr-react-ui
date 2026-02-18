@@ -1,18 +1,14 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import {
-  Canvas,
-  useFrame,
-  useThree,
-  type ThreeEvent,
-} from "@react-three/fiber";
-import {
-  OrbitControls,
-  Html,
-  Image as DreiImage,
   Billboard,
+  Image as DreiImage,
+  Html,
+  OrbitControls,
 } from "@react-three/drei";
 import * as THREE from "three";
 import { Loader2 } from "lucide-react";
+import type { ThreeEvent } from "@react-three/fiber";
 import type { Point3D, SearchQueryMarker } from "./types";
 
 export interface ControlledUmap3DProps {
@@ -54,7 +50,7 @@ const getCoordinates = (point: Point3D): [number, number, number] => {
 // Hook to manage the shared animation state for all points
 const useUnifyingPointTransition = (
   points: Array<Point3D>,
-  highlightedIds?: Array<string | number>
+  highlightedIds?: Array<string | number>,
 ) => {
   // We maintain persistent buffer for animation
   const currentPositionsRef = useRef<Float32Array | null>(null);
@@ -91,7 +87,7 @@ const useUnifyingPointTransition = (
         color.setRGB(
           Math.max(0, Math.min(1, nx)),
           Math.max(0, Math.min(1, ny)),
-          Math.max(0, Math.min(1, nz))
+          Math.max(0, Math.min(1, nz)),
         );
       }
 
@@ -172,12 +168,10 @@ const PointCloud = ({
   onClick: (
     index: number,
     point: Point3D,
-    event: ThreeEvent<MouseEvent>
+    event: ThreeEvent<MouseEvent>,
   ) => void;
   hiddenIndices?: Set<number>;
 }) => {
-  if (!points) return null;
-
   const meshRef = useRef<THREE.Points>(null);
   const hoverRef = useRef<number | null>(null);
 
@@ -185,7 +179,7 @@ const PointCloud = ({
   const pointIndices = useMemo(() => {
     if (!hiddenIndices || hiddenIndices.size === 0) return null;
 
-    const indices: number[] = [];
+    const indices: Array<number> = [];
     for (let i = 0; i < points.length; i++) {
       if (!hiddenIndices.has(i)) {
         indices.push(i);
@@ -234,8 +228,7 @@ const PointCloud = ({
     }
   };
 
-  const renderPositions =
-    positionsRef.current || fallbackPositions || new Float32Array(0);
+  const renderPositions = positionsRef.current || fallbackPositions;
 
   return (
     <points
@@ -292,7 +285,7 @@ const QueryMarker = ({ marker }: { marker: SearchQueryMarker }) => {
         />
       </mesh>
       <Html position={[0, 0.5, 0]} center zIndexRange={[100, 0]}>
-        <div className="bg-black/80 text-white px-2 py-1 rounded text-xs whitespace-nowrap backdrop-blur-md border border-white/20 select-none pointer-events-none">
+        <div className="bg-card/85 text-foreground px-2 py-1 rounded text-xs whitespace-nowrap backdrop-blur-md border border-border select-none pointer-events-none">
           {marker.label}
         </div>
       </Html>
@@ -580,7 +573,7 @@ const SceneContent = ({
         return (
           <mesh key={id} position={coords}>
             <sphereGeometry args={[0.2, 16, 16]} />
-            <meshBasicMaterial color="#00ffff" wireframe />
+            <meshBasicMaterial color={p.color || "#ffffff"} wireframe />
           </mesh>
         );
       })}
@@ -589,7 +582,7 @@ const SceneContent = ({
 };
 
 export const ControlledUmap3D = (
-  props: ControlledUmap3DProps & { renderImageMode?: boolean }
+  props: ControlledUmap3DProps & { renderImageMode?: boolean },
 ) => {
   if (props.isLoading) {
     return (
@@ -601,7 +594,7 @@ export const ControlledUmap3D = (
 
   return (
     <div
-      className={`w-full h-full bg-black/95 relative overflow-hidden ${
+      className={`w-full h-full bg-card relative overflow-hidden ${
         props.className || ""
       }`}
     >
@@ -612,7 +605,7 @@ export const ControlledUmap3D = (
         <SceneContent {...props} />
       </Canvas>
 
-      <div className="absolute bottom-4 right-4 pointer-events-none text-[10px] text-white/30">
+      <div className="absolute bottom-4 right-4 pointer-events-none text-[10px] text-muted-foreground">
         Interactive Embeddr Space
       </div>
     </div>

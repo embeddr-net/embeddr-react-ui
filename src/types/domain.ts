@@ -3,7 +3,14 @@ export interface PromptImage {
   url: string;
   image_url: string; // Added for compatibility
   thumb_url?: string; // Added for compatibility
-  media_type?: "image" | "video" | "audio" | "text";
+  media_type?:
+    | "image"
+    | "video"
+    | "audio"
+    | "text"
+    | "collection"
+    | "document"
+    | "web";
   duration?: number;
   fps?: number;
   frame_count?: number;
@@ -73,4 +80,35 @@ export interface Generation {
   inputs: Record<string, any>;
   outputs?: Array<any>;
   preview_url?: string;
+}
+
+/**
+ * Canonical artifact representation used across plugins.
+ *
+ * Matches the core Artifact model shape returned by the REST API.
+ * Import this instead of re-declaring per plugin.
+ */
+export interface ArtifactItem {
+  id: string;
+  type_name?: string;
+  uri?: string;
+  content_path?: string;
+  created_at?: string;
+  updated_at?: string;
+  metadata_json?: Record<string, any>;
+  owner_user_id?: string;
+  owner_operator_id?: string;
+  visibility?: "public" | "private";
+  owner_user?: {
+    id: string;
+    username?: string;
+    display_name?: string;
+    avatar_url?: string | null;
+  };
+  owner_operator?: {
+    id: string;
+    name?: string;
+    display_name?: string;
+    avatar_url?: string | null;
+  };
 }

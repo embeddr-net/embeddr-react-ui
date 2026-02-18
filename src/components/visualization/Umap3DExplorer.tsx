@@ -1,19 +1,19 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
-import type { ThreeEvent } from "@react-three/fiber";
 import { Html, OrbitControls } from "@react-three/drei";
 import * as THREE from "three";
 import {
   ExternalLinkIcon,
   EyeIcon,
+  Focus,
+  Grid,
   ImageIcon,
   Loader2,
   ScatterChart,
   X,
-  Grid,
-  Focus,
 } from "lucide-react";
-import { Button } from "../../ui/button";
+import { Button } from "../../components/ui/button";
+import type { ThreeEvent } from "@react-three/fiber";
 import type { Explorer3DProps, Point3D, SearchQueryMarker } from "./types";
 
 // Helper to extract coordinates safely
@@ -250,7 +250,6 @@ const ImageNodes = ({
 }) => {
   const imagePoints = useMemo(() => {
     return points.filter((p) => {
-      if (!p) return false;
       const ap = p as any;
       // Markers aren't images
       if (ap.isMarker || ap.isQuery) return false;
@@ -304,13 +303,14 @@ const HighlightPoint = ({
 }) => {
   if (!point) return null;
   const pos = getCoordinates(point);
+  const highlightColor = point.color || "#ffffff";
 
   return (
     <mesh position={pos}>
       <sphereGeometry args={[size, 16, 16]} />
       <meshStandardMaterial
-        color="#ff00ff"
-        emissive="#ff00ff"
+        color={highlightColor}
+        emissive={highlightColor}
         emissiveIntensity={2}
         transparent
         opacity={0.8}
@@ -328,7 +328,7 @@ const SelectedPoints = ({
   selectedIndices: Array<number>;
   size?: number;
 }) => {
-  if (!points || selectedIndices.length === 0) return null;
+  if (selectedIndices.length === 0) return null;
 
   return (
     <group>
@@ -341,8 +341,8 @@ const SelectedPoints = ({
           <mesh key={idx} position={pos}>
             <sphereGeometry args={[size, 16, 16]} />
             <meshStandardMaterial
-              color="#00ffff"
-              emissive="#00ffff"
+              color={point.color || "#ffffff"}
+              emissive={point.color || "#ffffff"}
               emissiveIntensity={2}
               transparent
               opacity={0.8}
@@ -366,7 +366,7 @@ const QueryMarker = ({ marker }: { marker: SearchQueryMarker }) => {
         />
       </mesh>
       <Html position={[0, 0.5, 0]} center zIndexRange={[100, 0]}>
-        <div className="bg-black/80 text-white text-xs px-2 py-1 rounded border border-white/20 whitespace-nowrap backdrop-blur-md pointer-events-none font-medium shadow-lg">
+        <div className="bg-card/85 text-foreground text-xs px-2 py-1 rounded border border-border whitespace-nowrap backdrop-blur-md pointer-events-none font-medium shadow-lg">
           {marker.label}
         </div>
       </Html>
@@ -483,12 +483,12 @@ const ConnectionLines = ({
     points.forEach((p) => pointMap.set(p.id, p));
 
     // Create geometry for lines
-    const vertices: number[] = [];
-    const colors: number[] = [];
+    const vertices: Array<number> = [];
+    const colors: Array<number> = [];
 
     // Geometry for highlight
-    const highlightVertices: number[] = [];
-    const highlightColors: number[] = [];
+    const highlightVertices: Array<number> = [];
+    const highlightColors: Array<number> = [];
 
     const tempColor = new THREE.Color();
 
@@ -606,10 +606,10 @@ export const Umap3DExplorer = ({
 }: Explorer3DProps & {
   isActive?: boolean;
   showDefaultOverlay?: boolean;
-  connections?: any[];
+  connections?: Array<any>;
   pointSize?: number;
   selectedPointId?: string | number | null;
-  searchMarkers?: SearchQueryMarker[];
+  searchMarkers?: Array<SearchQueryMarker>;
   highlightedConnection?: {
     startId: string | number;
     endId: string | number;
@@ -625,8 +625,8 @@ export const Umap3DExplorer = ({
 
   // Unified selection and auto-centering logic
   useEffect(() => {
-    if (!points || points.length === 0 || !controlsRef.current) {
-      lastPointsLengthRef.current = points?.length || 0;
+    if (points.length === 0 || !controlsRef.current) {
+      lastPointsLengthRef.current = points.length;
       return;
     }
 
@@ -658,7 +658,6 @@ export const Umap3DExplorer = ({
         sumZ = 0,
         validCount = 0;
       for (const p of points) {
-        if (!p) continue;
         const [x, y, z] = getCoordinates(p);
         sumX += x;
         sumY += y;
@@ -693,7 +692,6 @@ export const Umap3DExplorer = ({
   };
 
   const selectNearest = (index: number, numberOfNeighbors: number = 50) => {
-    if (!points) return;
     const origin = points[index];
     if (!origin) return;
 
@@ -731,7 +729,7 @@ export const Umap3DExplorer = ({
     );
   }
 
-  if (!points || points.length === 0) {
+  if (points.length === 0) {
     return (
       <div className="h-full w-full flex items-center justify-center text-muted-foreground">
         No 3D data found.
@@ -817,7 +815,7 @@ export const Umap3DExplorer = ({
       </Canvas>
 
       <div className="absolute top-4 left-4 flex gap-2 pointer-events-none">
-        <div className="bg-black/50 backdrop-blur text-white px-3 py-1 text-xs border border-white/10 rounded flex items-center h-8">
+        <div className="bg-card/80 backdrop-blur text-foreground px-3 py-1 text-xs border border-border rounded flex items-center h-8">
           {count ? count.toLocaleString() : points.length.toLocaleString()}{" "}
           points
         </div>
@@ -868,11 +866,11 @@ export const Umap3DExplorer = ({
       {/* Target Clear Indicator */}
       {cameraTarget && (
         <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-20 pointer-events-auto">
-          <div className="bg-black/80 backdrop-blur text-white px-3 py-1 text-xs border border-white/20 rounded-full flex items-center gap-2 shadow-xl">
+          <div className="bg-card/85 backdrop-blur text-foreground px-3 py-1 text-xs border border-border rounded-full flex items-center gap-2 shadow-xl">
             <span>Camera Locked</span>
             <button
               onClick={() => setCameraTarget(null)}
-              className="hover:bg-white/20 rounded-full p-0.5"
+              className="hover:bg-muted rounded-full p-0.5"
             >
               <X className="w-3 h-3" />
             </button>
@@ -948,7 +946,7 @@ export const Umap3DExplorer = ({
       )}
 
       {/* Multi-selection Grid (Bottom Left) */}
-      {selectedIndices.length > 1 && points && (
+      {selectedIndices.length > 1 && (
         <div className="absolute bottom-4 left-4 z-10 bg-card border border-border overflow-hidden shadow-lg w-96 max-h-[50vh] flex flex-col rounded">
           <div className="p-2 bg-muted border-b border-border flex items-center justify-between">
             <span className="text-sm font-medium">
@@ -992,7 +990,7 @@ export const Umap3DExplorer = ({
       )}
 
       <div className="absolute bottom-4 right-4 pointer-events-none max-w-sm text-right">
-        <div className="text-white/50 text-[10px] bg-black/50 backdrop-blur px-2 py-1 border border-white/10 rounded">
+        <div className="text-muted-foreground text-[10px] bg-card/80 backdrop-blur px-2 py-1 border border-border rounded">
           Left Click: Select • Ctrl+Click: Center & Select • Right Click: Pan •
           Scroll: Zoom • WASD/QE: Move
         </div>

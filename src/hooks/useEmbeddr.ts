@@ -1,8 +1,10 @@
-import { useEmbeddrAPI } from "../context/EmbeddrContext";
+import { usePluginAPI } from "./usePluginAPI";
 
 /**
- * Access the core Embeddr API, including utilities, stores, and event bus.
+ * Backward-compatible alias for `usePluginAPI`.
+ *
+ * Prefer `usePluginAPI` for new plugin code.
  */
 export const useEmbeddr = () => {
-  return useEmbeddrAPI();
+  return usePluginAPI();
 };

@@ -23,7 +23,7 @@ describe("ExternalNavProvider", () => {
     render(
       <ExternalNavProvider>
         <div>Child Content</div>
-      </ExternalNavProvider>
+      </ExternalNavProvider>,
     );
     expect(screen.getByText("Child Content")).toBeInTheDocument();
   });
@@ -32,7 +32,7 @@ describe("ExternalNavProvider", () => {
     render(
       <ExternalNavProvider>
         <TestComponent />
-      </ExternalNavProvider>
+      </ExternalNavProvider>,
     );
 
     fireEvent.click(screen.getByText("Open Link"));
@@ -47,7 +47,7 @@ describe("ExternalNavProvider", () => {
     render(
       <ExternalNavProvider>
         <TestComponent />
-      </ExternalNavProvider>
+      </ExternalNavProvider>,
     );
 
     // Open dialog
@@ -59,7 +59,7 @@ describe("ExternalNavProvider", () => {
     expect(openSpy).toHaveBeenCalledWith(
       "https://example.com",
       "_blank",
-      "noopener,noreferrer"
+      "noopener,noreferrer",
     );
 
     // Dialog should be closed (or closing)
@@ -73,7 +73,7 @@ describe("ExternalNavProvider", () => {
     render(
       <ExternalNavProvider>
         <TestComponent />
-      </ExternalNavProvider>
+      </ExternalNavProvider>,
     );
 
     // Open dialog

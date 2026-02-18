@@ -211,11 +211,17 @@ export interface EmbeddrAPI {
     list: (input: {
       limit?: number;
       offset?: number;
+      q?: string;
+      access_scope?: "personal" | "instance";
       type_name?: string;
+      visibility?: "all" | "public" | "private";
       sort?: "new" | "random";
       ids?: Array<string>;
     }) => Promise<{ items: Array<any>; count?: number }>;
-    get: (id: string) => Promise<any>;
+    get: (
+      id: string,
+      input?: { include_owner_profiles?: boolean },
+    ) => Promise<any>;
     getContentUrl: (id: string) => string;
     resolve: (input: {
       id: string;
@@ -237,6 +243,7 @@ export interface EmbeddrAPI {
         uri?: string;
         type_name?: string;
         base_type_name?: string;
+        visibility?: "public" | "private";
       },
     ) => Promise<any>;
     delete: (id: string) => Promise<any>;
@@ -320,6 +327,14 @@ export interface EmbeddrAPI {
       } | null;
     }>;
     operatorProfile?: () => Promise<any>;
+    login?: (payload: { username: string; password: string }) => Promise<{
+      ok: boolean;
+      key?: string;
+      key_prefix?: string;
+      user?: { id: string; username: string; display_name: string };
+      detail?: string;
+    }>;
+    logout?: () => Promise<{ ok: boolean; message?: string }>;
   };
   /**
    * Event bus for inter-plugin communication.

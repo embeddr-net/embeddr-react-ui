@@ -1,4 +1,4 @@
-import React from "react";
+import type React from "react";
 
 export type RenderableContext = {
   api?: any;
@@ -45,7 +45,7 @@ export type RenderableCatalogEntry = {
   hasRenderer: boolean;
 };
 
-const registry: RenderableDescriptor[] = [];
+const registry: Array<RenderableDescriptor> = [];
 const metaRegistry = new Map<string, RenderableMeta>();
 
 const matchesRenderable = (
@@ -66,7 +66,7 @@ const matchesRenderable = (
 };
 
 export const registerRenderable = (descriptor: RenderableDescriptor) => {
-  if (!descriptor?.id) return () => undefined;
+  if (!descriptor.id) return () => undefined;
   if (!registry.find((r) => r.id === descriptor.id)) {
     registry.push(descriptor);
   }
@@ -77,7 +77,7 @@ export const registerRenderable = (descriptor: RenderableDescriptor) => {
 };
 
 export const registerRenderableMeta = (meta: RenderableMeta) => {
-  if (!meta?.id) return () => undefined;
+  if (!meta.id) return () => undefined;
   metaRegistry.set(meta.id, meta);
   return () => metaRegistry.delete(meta.id);
 };
@@ -97,8 +97,8 @@ export const listRenderables = () => {
 export const getRenderableById = (id: string) =>
   registry.find((descriptor) => descriptor.id === id);
 
-export const listRenderableCatalog = (): RenderableCatalogEntry[] => {
-  const out: RenderableCatalogEntry[] = [];
+export const listRenderableCatalog = (): Array<RenderableCatalogEntry> => {
+  const out: Array<RenderableCatalogEntry> = [];
   const known = new Set<string>();
 
   for (const descriptor of registry) {
@@ -135,11 +135,11 @@ export const syncRenderablesFromLotus = async (
   api: any,
   options?: { limit?: number },
 ) => {
-  if (!api?.lotus?.list) return [] as RenderableMeta[];
+  if (!api?.lotus?.list) return [] as Array<RenderableMeta>;
   const limit = options?.limit ?? 500;
   const res = await api.lotus.list({ limit });
   const items = (res?.items || []) as Array<any>;
-  const metas: RenderableMeta[] = [];
+  const metas: Array<RenderableMeta> = [];
   for (const cap of items) {
     const data = cap?.data || {};
     if (data?.type !== "zen.renderable") continue;

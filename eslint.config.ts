@@ -13,6 +13,26 @@ const config: Linter.Config[] = [
       ".vite/**",
     ],
   },
+  {
+    files: ["src/**/*.{ts,tsx}"],
+    rules: {
+      "no-restricted-imports": [
+        "error",
+        {
+          patterns: [
+            "./ui",
+            "./ui/*",
+            "../ui/*",
+            "../ui",
+            "../../ui/*",
+            "../../ui",
+            "../../../ui/*",
+            "../../../ui",
+          ],
+        },
+      ],
+    },
+  },
 ];
 
 export default config;

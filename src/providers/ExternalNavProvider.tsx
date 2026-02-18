@@ -1,12 +1,12 @@
 import React, { useState } from "react";
 import {
+  Button,
   Dialog,
   DialogContent,
   DialogDescription,
   DialogFooter,
   DialogTitle,
-  Button,
-} from "../ui/index";
+} from "../components/ui";
 import { ExternalNavContext } from "../hooks/useExternalNav";
 
 export function ExternalNavProvider({
@@ -17,9 +17,10 @@ export function ExternalNavProvider({
   const [open, setOpen] = useState(false);
   const [href, setHref] = useState<string | null>(null);
 
-  function openExternal(url: string, skipConfirmation = false) {
+  function openExternal(url: string, skipConfirmation = false, newTab = true) {
     if (skipConfirmation) {
-      window.open(url, "_blank", "noopener,noreferrer");
+      const features = newTab ? "noopener,noreferrer" : "";
+      window.open(url, newTab ? "_blank" : "", features);
       return;
     }
     setHref(url);
@@ -33,7 +34,8 @@ export function ExternalNavProvider({
 
   function confirm() {
     if (href) {
-      window.open(href, "_blank", "noopener,noreferrer");
+      const features = "noopener,noreferrer";
+      window.open(href, "_blank", features);
     }
     setOpen(false);
     setHref(null);

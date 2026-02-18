@@ -1,15 +1,15 @@
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
 
 // Helper hook to read plugin settings
 export const usePluginSetting = <T>(
   pluginId: string,
   key: string,
-  defaultValue: T
+  defaultValue: T,
 ): T => {
   const [value, setValue] = useState<T>(() => {
     try {
       const allSettings = JSON.parse(
-        localStorage.getItem("zen-plugin-settings") || "{}"
+        localStorage.getItem("zen-plugin-settings") || "{}",
       );
       return allSettings[pluginId]?.[key] ?? defaultValue;
     } catch {
@@ -21,7 +21,7 @@ export const usePluginSetting = <T>(
     const handleStorage = () => {
       try {
         const allSettings = JSON.parse(
-          localStorage.getItem("zen-plugin-settings") || "{}"
+          localStorage.getItem("zen-plugin-settings") || "{}",
         );
         const newValue = allSettings[pluginId]?.[key] ?? defaultValue;
         setValue(newValue);

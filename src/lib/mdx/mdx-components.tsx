@@ -1,13 +1,28 @@
 import React from "react";
 import { AlertTriangle, CheckCircle2, Info, Sparkles } from "lucide-react";
-import { Badge } from "../../ui/badge";
-import { Button } from "../../ui/button";
-import { Card } from "../../ui/card";
-import { Separator } from "../../ui/separator";
+import {
+  Progress,
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+} from "@embeddr/react-ui";
+import { Badge } from "../../components/ui/badge";
+import { Button } from "../../components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "../../components/ui/card";
+import { Separator } from "../../components/ui/separator";
 import { cn } from "../utils";
-import { EmbeddrArtifact } from "../../components/EmbeddrArtifact";
-import { EmbeddrImage } from "../../components/EmbeddrImage";
-import { VideoPlayer } from "../../components/VideoPlayer";
+import {
+  EmbeddrArtifact,
+  EmbeddrImage,
+  VideoPlayer,
+} from "../../components/embeddr";
 import { resolveRenderable } from "../renderables";
 import { useOptionalEmbeddrAPI } from "../../context/EmbeddrContext";
 
@@ -154,7 +169,16 @@ export const mdxComponents: Record<string, React.ComponentType<any>> = {
   ),
   Badge,
   Button,
+  Progress,
   Card,
+  CardTitle,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  Tabs,
+  TabsList,
+  TabsTrigger,
+  TabsContent,
   Separator,
   Callout,
   Kbd,

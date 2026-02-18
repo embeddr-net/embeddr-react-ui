@@ -1,20 +1,25 @@
+// --- Core UI primitives ---
+export * from "./components/ui";
+
+// --- Structured components API ---
+export * from "./components";
+
+// --- Hooks ---
 export * from "./hooks/index";
+
+// --- Providers ---
 export * from "./providers/index";
+
+// --- Context ---
 export * from "./context/index";
+
+// --- Types ---
 export * from "./types/index";
+
+// --- Utilities ---
 export * from "./lib/utils";
-export * from "./lib/reactive";
 export * from "./lib/dnd";
-export * from "./lib/renderables";
-export * from "./lib/plugin-manifest";
-export * from "./lib/plugin-runtime";
-export * from "./lib/embeddr-guest-client";
 export * from "./lib/mdx";
-export * from "./ui/index";
-export * from "./components/visualization/Umap3DExplorer";
-export * from "./components/visualization/ControlledUmap3D";
-export * from "./components/visualization/types";
-export * from "./components/EmbeddrImage";
-export * from "./components/EmbeddrArtifact";
-export * from "./components/VideoPlayer";
-export * from "./components/client/ClientPanel";
+export * from "./lib/reactive";
+export * from "./lib/renderables";
+export * from "./lib/artifact-graph";
