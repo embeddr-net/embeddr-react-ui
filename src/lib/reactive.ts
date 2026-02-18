@@ -19,6 +19,30 @@ export type ReactiveRegistryEntry = {
   config: ReactiveConfig;
 };
 
+type ReactiveArtifactState = {
+  artifactId: string | null;
+  updatedAt: string;
+};
+
+const REACTIVE_STATE_EVENT = "embeddr:reactive:state";
+const REACTIVE_STATE_STORAGE_PREFIX = "embeddr:reactive:artifact:";
+
+const normalizeScope = (scope?: string) => {
+  const value = String(scope || "global").trim();
+  return value
+    .replace(/\s+/g, "-")
+    .replace(/[^a-zA-Z0-9:/._-]/g, "_")
+    .toLowerCase();
+};
+
+const normalizeUri = (uri: string) => String(uri || "").trim();
+
+const reactiveStateStorageKey = (uri: string, scope?: string) => {
+  const normalizedUri = normalizeUri(uri);
+  const normalizedScope = normalizeScope(scope);
+  return `${REACTIVE_STATE_STORAGE_PREFIX}${normalizedScope}:${normalizedUri}`;
+};
+
 const toArray = (value?: string | Array<string>) => {
   if (!value) return [];
   return Array.isArray(value) ? value : [value];
@@ -118,4 +142,102 @@ export const resolveReactiveConfig = (params: {
     return entry.config;
   }
   return undefined;
+};
+
+export const readReactiveArtifactState = (params: {
+  uri: string;
+  scope?: string;
+}): ReactiveArtifactState | null => {
+  const uri = normalizeUri(params.uri);
+  if (!uri) return null;
+  try {
+    if (typeof window === "undefined") return null;
+    const raw = window.localStorage.getItem(
+      reactiveStateStorageKey(uri, params.scope),
+    );
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    if (!parsed || typeof parsed !== "object") return null;
+    return {
+      artifactId: parsed.artifactId ? String(parsed.artifactId) : null,
+      updatedAt: String(parsed.updatedAt || new Date().toISOString()),
+    };
+  } catch {
+    return null;
+  }
+};
+
+export const publishReactiveArtifactState = (params: {
+  uri: string;
+  artifactId?: string | null;
+  scope?: string;
+}) => {
+  const uri = normalizeUri(params.uri);
+  if (!uri) return null;
+
+  const payload: ReactiveArtifactState = {
+    artifactId: params.artifactId ? String(params.artifactId) : null,
+    updatedAt: new Date().toISOString(),
+  };
+
+  try {
+    if (typeof window !== "undefined") {
+      window.localStorage.setItem(
+        reactiveStateStorageKey(uri, params.scope),
+        JSON.stringify(payload),
+      );
+    }
+  } catch {
+    // no-op
+  }
+
+  try {
+    if (typeof window !== "undefined") {
+      window.dispatchEvent(
+        new CustomEvent(REACTIVE_STATE_EVENT, {
+          detail: {
+            uri,
+            scope: normalizeScope(params.scope),
+            payload,
+          },
+        }),
+      );
+    }
+  } catch {
+    // no-op
+  }
+
+  return payload;
+};
+
+export const subscribeReactiveArtifactState = (
+  params: { uri: string; scope?: string },
+  onUpdate: (state: ReactiveArtifactState | null) => void,
+) => {
+  const uri = normalizeUri(params.uri);
+  if (!uri || typeof window === "undefined") return () => undefined;
+
+  const targetScope = normalizeScope(params.scope);
+  const targetKey = reactiveStateStorageKey(uri, params.scope);
+
+  const onStorage = (event: StorageEvent) => {
+    if (event.key !== targetKey) return;
+    onUpdate(readReactiveArtifactState({ uri, scope: params.scope }));
+  };
+
+  const onCustom = (event: Event) => {
+    const custom = event as CustomEvent;
+    const detail = custom.detail || {};
+    if (String(detail.uri || "") !== uri) return;
+    if (String(detail.scope || "") !== targetScope) return;
+    onUpdate(detail.payload as ReactiveArtifactState);
+  };
+
+  window.addEventListener("storage", onStorage);
+  window.addEventListener(REACTIVE_STATE_EVENT, onCustom as EventListener);
+
+  return () => {
+    window.removeEventListener("storage", onStorage);
+    window.removeEventListener(REACTIVE_STATE_EVENT, onCustom as EventListener);
+  };
 };
