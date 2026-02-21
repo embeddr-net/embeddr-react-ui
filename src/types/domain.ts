@@ -47,7 +47,7 @@ export interface PromptImage {
   updated_at?: string;
 }
 
-export interface Workflow {
+export interface PipelineSpec {
   id: number;
   name: string;
   description?: string;
@@ -68,9 +68,9 @@ export interface Workflow {
   updated_at: string;
 }
 
-export interface Generation {
+export interface ExecutionRecord {
   id: string;
-  prompt_id?: string; // ComfyUI prompt ID
+  prompt_id?: string;
   status: "pending" | "queued" | "processing" | "completed" | "failed";
   prompt: string;
   images?: Array<string>;
@@ -80,35 +80,4 @@ export interface Generation {
   inputs: Record<string, any>;
   outputs?: Array<any>;
   preview_url?: string;
-}
-
-/**
- * Canonical artifact representation used across plugins.
- *
- * Matches the core Artifact model shape returned by the REST API.
- * Import this instead of re-declaring per plugin.
- */
-export interface ArtifactItem {
-  id: string;
-  type_name?: string;
-  uri?: string;
-  content_path?: string;
-  created_at?: string;
-  updated_at?: string;
-  metadata_json?: Record<string, any>;
-  owner_user_id?: string;
-  owner_operator_id?: string;
-  visibility?: "public" | "private";
-  owner_user?: {
-    id: string;
-    username?: string;
-    display_name?: string;
-    avatar_url?: string | null;
-  };
-  owner_operator?: {
-    id: string;
-    name?: string;
-    display_name?: string;
-    avatar_url?: string | null;
-  };
 }
