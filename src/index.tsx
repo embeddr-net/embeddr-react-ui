@@ -21,5 +21,6 @@ export * from "./lib/utils";
 export * from "./lib/dnd";
 export * from "./lib/mdx";
 export * from "./lib/reactive";
+export * from "./lib/previews";
 export * from "./lib/renderables";
 export * from "./lib/artifact-graph";
