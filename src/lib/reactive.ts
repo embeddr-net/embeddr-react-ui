@@ -6,6 +6,14 @@ export type ReactiveConfig = {
   processingTypes?: Array<string>;
   doneTypes?: Array<string>;
   errorTypes?: Array<string>;
+  preferFinalArtifactOnly?: boolean;
+};
+
+export type ReactivePresentation = {
+  label?: string;
+  shortLabel?: string;
+  logoUrl?: string;
+  tone?: "default" | "brand" | "accent" | "warning";
 };
 
 export type ReactiveMatch = {
@@ -17,6 +25,7 @@ export type ReactiveMatch = {
 export type ReactiveRegistryEntry = {
   match: ReactiveMatch;
   config: ReactiveConfig;
+  presentation?: ReactivePresentation;
 };
 
 type ReactiveArtifactState = {
@@ -125,6 +134,15 @@ export const resolveReactiveConfig = (params: {
   url?: string;
   artifactType?: string;
 }): ReactiveConfig | undefined => {
+  const ctx = resolveReactiveContext(params);
+  return ctx?.config;
+};
+
+export const resolveReactiveContext = (params: {
+  type?: string;
+  url?: string;
+  artifactType?: string;
+}): ReactiveRegistryEntry | undefined => {
   const type = (params.type || params.artifactType || "").toLowerCase();
   const url = params.url || "";
 
@@ -139,9 +157,17 @@ export const resolveReactiveConfig = (params: {
     if (match.urlPrefix && !url.startsWith(match.urlPrefix)) {
       continue;
     }
-    return entry.config;
+    return entry;
   }
   return undefined;
+};
+
+export const resolveReactivePresentation = (params: {
+  type?: string;
+  url?: string;
+  artifactType?: string;
+}): ReactivePresentation | undefined => {
+  return resolveReactiveContext(params)?.presentation;
 };
 
 export const readReactiveArtifactState = (params: {
