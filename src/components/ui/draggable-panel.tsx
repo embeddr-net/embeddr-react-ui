@@ -194,6 +194,8 @@ export function DraggablePanel({
   const dragStartRef = useRef({ x: 0, y: 0 });
   const initialPosRef = useRef({ x: 0, y: 0 });
   const initialSizeRef = useRef({ width: 0, height: 0 });
+  const pendingPointerRef = useRef<{ x: number; y: number } | null>(null);
+  const frameRef = useRef<number | null>(null);
 
   // Refs for logic that needs current values without re-triggering effects
   const positionRef = useRef(position);
@@ -477,7 +479,28 @@ export function DraggablePanel({
       }
     };
 
+    const flushPendingMove = () => {
+      if (!pendingPointerRef.current) return;
+      const next = pendingPointerRef.current;
+      pendingPointerRef.current = null;
+      applyMove(next.x, next.y);
+    };
+
+    const scheduleMove = (clientX: number, clientY: number) => {
+      pendingPointerRef.current = { x: clientX, y: clientY };
+      if (frameRef.current !== null) return;
+      frameRef.current = window.requestAnimationFrame(() => {
+        frameRef.current = null;
+        flushPendingMove();
+      });
+    };
+
     const endInteraction = () => {
+      if (frameRef.current !== null) {
+        window.cancelAnimationFrame(frameRef.current);
+        frameRef.current = null;
+      }
+      flushPendingMove();
       if (isDragging) {
         window.dispatchEvent(
           new CustomEvent("zen-panel-drag-end", {
@@ -495,14 +518,15 @@ export function DraggablePanel({
       setIsResizing(false);
     };
 
-    const handleMouseMove = (e: MouseEvent) => applyMove(e.clientX, e.clientY);
+    const handleMouseMove = (e: MouseEvent) =>
+      scheduleMove(e.clientX, e.clientY);
     const handleMouseUp = () => endInteraction();
 
     const handleTouchMove = (e: TouchEvent) => {
       e.preventDefault(); // prevent scroll while dragging/resizing
       const t = e.touches[0];
       if (!t) return;
-      applyMove(t.clientX, t.clientY);
+      scheduleMove(t.clientX, t.clientY);
     };
     const handleTouchEnd = () => endInteraction();
 
@@ -520,6 +544,11 @@ export function DraggablePanel({
       window.removeEventListener("touchmove", handleTouchMove);
       window.removeEventListener("touchend", handleTouchEnd);
       document.body.classList.remove("embeddr-panel-interacting");
+      if (frameRef.current !== null) {
+        window.cancelAnimationFrame(frameRef.current);
+        frameRef.current = null;
+      }
+      pendingPointerRef.current = null;
     };
   }, [
     isDragging,
@@ -599,18 +628,23 @@ export function DraggablePanel({
         "focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:border focus-visible:border-primary/30",
         isActive ? "embeddr-panel-active" : "embeddr-panel-inactive",
         (isDragging || isResizing) && "embeddr-panel-interacting",
+        (isDragging || isResizing) && "transition-none",
         transparent &&
           "bg-transparent border-none shadow-none backdrop-blur-none",
         titlePosition === "bottom" ? "flex-col-reverse" : "flex-col",
         className,
       )}
       style={{
-        left: position.x,
-        top: visualY,
+        left: 0,
+        top: 0,
+        transform: `translate3d(${position.x}px, ${visualY}px, 0)`,
         width: size.width,
         height: isFolded ? "auto" : size.height,
         zIndex: zIndex ?? 50,
         minHeight: isFolded && (!showTitle || hideHeader) ? "1rem" : undefined,
+        willChange: isDragging || isResizing ? "transform,width,height" : "auto",
+        contain: "layout paint style",
+        backfaceVisibility: "hidden",
       }}
       onMouseDown={(e) => {
         onFocus?.();

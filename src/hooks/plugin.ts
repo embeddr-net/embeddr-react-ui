@@ -3,6 +3,7 @@ export { usePluginAPI } from "./usePluginAPI";
 export { useEmbeddr } from "./useEmbeddr";
 export { usePlugins } from "./usePlugins";
 export { usePluginStorage } from "./usePluginStorage";
+export { usePanelStorageNamespace } from "./usePanelStorageNamespace";
 export { usePluginSetting } from "./usePluginSetting";
 export { usePluginDrop } from "./usePluginDrop";
 export { useWebSocketEvent, useWebSocketStream } from "./useWebSocket";
