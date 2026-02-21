@@ -4,6 +4,11 @@ import { cn } from "../../lib/utils";
 import { EmbeddrDnDTypes } from "../../lib/dnd";
 import { useOptionalEmbeddrAPI } from "../../context/EmbeddrContext";
 import { EmbeddrImage } from "./EmbeddrImage";
+import {
+  ArtifactContextMenu,
+  type ArtifactContextMenuAction,
+  type ArtifactContextMenuContext,
+} from "./ArtifactContextMenu";
 
 export interface EmbeddrArtifactProps extends React.ImgHTMLAttributes<HTMLImageElement> {
   id?: string;
@@ -25,6 +30,13 @@ export interface EmbeddrArtifactProps extends React.ImgHTMLAttributes<HTMLImageE
     url?: string;
     payload?: Record<string, any>;
   }>;
+  contextMenuDisabled?: boolean;
+  contextMenuMode?: "merge" | "replace";
+  contextMenuActions?: ArtifactContextMenuAction[];
+  resolveContextMenuActions?: (input: {
+    defaults: ArtifactContextMenuAction[];
+    context: ArtifactContextMenuContext;
+  }) => ArtifactContextMenuAction[];
 }
 
 function buildV1Base(backendUrl?: string, apiBackendUrl?: string) {
@@ -65,6 +77,10 @@ export const EmbeddrArtifact = React.forwardRef<
       artifactPath = "",
       variant = "preview",
       resolver,
+      contextMenuDisabled,
+      contextMenuMode,
+      contextMenuActions,
+      resolveContextMenuActions,
       className,
       onDragStart,
       ...props
@@ -216,7 +232,7 @@ export const EmbeddrArtifact = React.forwardRef<
         }
       };
 
-      return (
+      const audioNode = (
         <div
           className={cn(
             "flex h-full w-full flex-col items-center justify-center gap-3 bg-muted/60 p-3 text-muted-foreground",
@@ -236,6 +252,28 @@ export const EmbeddrArtifact = React.forwardRef<
           )}
         </div>
       );
+
+      if (contextMenuDisabled) return audioNode;
+
+      return (
+        <ArtifactContextMenu
+          context={{
+            api,
+            artifactId: resolved?.id ?? id,
+            artifactType: resolvedType,
+            artifactPath,
+            src: audioSrc,
+            contentUrl: resolved?.content_url,
+            previewUrl: resolved?.preview_url,
+            artifactPayload: resolved?.payload,
+          }}
+          mode={contextMenuMode}
+          actions={contextMenuActions}
+          resolveActions={resolveContextMenuActions}
+        >
+          {audioNode}
+        </ArtifactContextMenu>
+      );
     }
 
     return (
@@ -249,6 +287,10 @@ export const EmbeddrArtifact = React.forwardRef<
         contentUrl={resolved?.content_url}
         previewUrl={resolved?.preview_url}
         artifactPayload={resolved?.payload}
+        contextMenuDisabled={contextMenuDisabled}
+        contextMenuMode={contextMenuMode}
+        contextMenuActions={contextMenuActions}
+        resolveContextMenuActions={resolveContextMenuActions}
         className={cn("h-full w-full object-cover", className)}
         {...props}
       />

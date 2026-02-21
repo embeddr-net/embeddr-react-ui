@@ -2,6 +2,11 @@ import React, { useMemo } from "react";
 import { EmbeddrDnDTypes } from "../../lib/dnd";
 import { cn } from "../../lib/utils";
 import { useOptionalEmbeddrAPI } from "../../context/EmbeddrContext";
+import {
+  ArtifactContextMenu,
+  type ArtifactContextMenuAction,
+  type ArtifactContextMenuContext,
+} from "./ArtifactContextMenu";
 
 export interface EmbeddrImageProps extends React.ImgHTMLAttributes<HTMLImageElement> {
   id?: string; // The Artifact ID (optional for external resources)
@@ -11,6 +16,13 @@ export interface EmbeddrImageProps extends React.ImgHTMLAttributes<HTMLImageElem
   contentUrl?: string; // Normalized content URL
   previewUrl?: string; // Normalized preview URL
   artifactPayload?: Record<string, any>; // Optional full payload for DnD
+  contextMenuDisabled?: boolean;
+  contextMenuMode?: "merge" | "replace";
+  contextMenuActions?: ArtifactContextMenuAction[];
+  resolveContextMenuActions?: (input: {
+    defaults: ArtifactContextMenuAction[];
+    context: ArtifactContextMenuContext;
+  }) => ArtifactContextMenuAction[];
 }
 
 export const EmbeddrImage = React.forwardRef<
@@ -27,6 +39,10 @@ export const EmbeddrImage = React.forwardRef<
       contentUrl: contentUrlProp,
       previewUrl: previewUrlProp,
       artifactPayload,
+      contextMenuDisabled,
+      contextMenuMode,
+      contextMenuActions,
+      resolveContextMenuActions,
       onDragStart,
       className,
       ...props
@@ -152,7 +168,7 @@ export const EmbeddrImage = React.forwardRef<
       if (onDragStart) onDragStart(e);
     };
 
-    return (
+    const imageNode = (
       <img
         ref={ref}
         src={signedSrc}
@@ -161,6 +177,28 @@ export const EmbeddrImage = React.forwardRef<
         className={cn("hover:border-primary", className)}
         {...props}
       />
+    );
+
+    if (contextMenuDisabled) return imageNode;
+
+    return (
+      <ArtifactContextMenu
+        context={{
+          api,
+          artifactId: id,
+          artifactType,
+          artifactPath,
+          src: signedSrc,
+          contentUrl: contentUrlProp,
+          previewUrl: previewUrlProp,
+          artifactPayload,
+        }}
+        mode={contextMenuMode}
+        actions={contextMenuActions}
+        resolveActions={resolveContextMenuActions}
+      >
+        {imageNode}
+      </ArtifactContextMenu>
     );
   },
 );
