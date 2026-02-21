@@ -642,7 +642,8 @@ export function DraggablePanel({
         height: isFolded ? "auto" : size.height,
         zIndex: zIndex ?? 50,
         minHeight: isFolded && (!showTitle || hideHeader) ? "1rem" : undefined,
-        willChange: isDragging || isResizing ? "transform,width,height" : "auto",
+        willChange:
+          isDragging || isResizing ? "transform,width,height" : "auto",
         contain: "layout paint style",
         backfaceVisibility: "hidden",
       }}
