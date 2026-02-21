@@ -1,4 +1,4 @@
-import type { Generation } from "./domain";
+import type { ExecutionRecord } from "./domain";
 
 export type WebSocketMessageSource = "embeddr" | "comfyui";
 
@@ -56,22 +56,37 @@ export interface ClientDisconnectedMsg extends WSBaseMessage<{
 
 /**
  * Response to an initial connection or status request.
- * Contains the current queue size and list of actively running generations.
+ * Contains the current queue size and list of actively running executions.
  */
 export interface StatusResponseMsg extends WSBaseMessage<{
   queue_status: {
     remaining: number;
   };
-  running_generations: Array<Generation>;
+  running_executions: Array<ExecutionRecord>;
+  running_generations?: Array<ExecutionRecord>;
 }> {
   type: "status_response";
   source: "embeddr";
 }
 
 /**
- * Broadcast when a new generation request is successfully submitted to the queue.
+ * Broadcast when a new execution request is successfully submitted to the queue.
  */
-export interface GenerationSubmittedMsg extends WSBaseMessage<{
+export interface ExecutionSubmittedMsg extends WSBaseMessage<{
+  execution_id?: string;
+  generation_id?: string;
+  prompt_id: string;
+}> {
+  type: "execution_submitted" | "generation_submitted";
+  source: "embeddr";
+}
+
+export type GenerationSubmittedMsg = ExecutionSubmittedMsg;
+
+/**
+ * Backward-compatible legacy message variant used by older backends.
+ */
+export interface LegacyGenerationSubmittedMsg extends WSBaseMessage<{
   generation_id: string;
   prompt_id: string;
 }> {
@@ -111,7 +126,8 @@ export type EmbeddrSystemMessage =
   | ClientConnectedMsg
   | ClientDisconnectedMsg
   | StatusResponseMsg
-  | GenerationSubmittedMsg
+  | ExecutionSubmittedMsg
+  | LegacyGenerationSubmittedMsg
   | DatasetItemsAddedMsg
   | DatasetItemUpdatedMsg;
 

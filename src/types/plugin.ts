@@ -1,5 +1,5 @@
 import type React from "react";
-import type { Generation, PromptImage, Workflow } from "./domain";
+import type { ExecutionRecord, PipelineSpec, PromptImage } from "./domain";
 import type { EmbeddrMessage } from "./websocket";
 
 /**
@@ -30,9 +30,14 @@ export interface EmbeddrEventMap {
   client_disconnected: { client_id: string; total: number };
   status_response: {
     queue_status: { remaining: number };
-    running_generations: Array<Generation>;
+    running_executions: Array<ExecutionRecord>;
   };
-  generation_submitted: { generation_id: string; prompt_id: string };
+  execution_submitted: { execution_id: string; prompt_id?: string };
+  generation_submitted: {
+    generation_id?: string;
+    execution_id?: string;
+    prompt_id?: string;
+  };
   "dataset:items_added": { dataset_id: number; count: number };
   "dataset:item_updated": { id: number; dataset_id: number; caption: string };
 
@@ -52,6 +57,34 @@ export interface EmbeddrEventMap {
 
   // General fallback
   [key: string]: any;
+}
+
+export interface ExecutionStore {
+  pipelines: Array<PipelineSpec>;
+  selectedPipeline: PipelineSpec | null;
+  runs: Array<ExecutionRecord>;
+  isRunning: boolean;
+  run: () => Promise<void>;
+  setPipelineInput: (nodeId: string, field: string, value: any) => void;
+  selectPipeline: (pipeline: PipelineSpec) => void;
+}
+
+export interface ModelCatalogAPI {
+  list: (input: {
+    category: string;
+    page?: number;
+    limit?: number;
+  }) => Promise<{
+    items: Array<string>;
+    total: number;
+    page: number;
+    pages: number;
+    category: string;
+  }>;
+  listSamplers: () => Promise<{
+    samplers: Array<string>;
+    schedulers: Array<string>;
+  }>;
 }
 
 // --- API Interface ---
@@ -77,42 +110,7 @@ export interface EmbeddrAPI {
        */
       selectImage: (image: PromptImage | null) => void;
     };
-    /**
-     * Generation workflow state and actions.
-     */
-    generation: {
-      /**
-       * List of available ComfyUI workflows.
-       */
-      workflows: Array<Workflow>;
-      /**
-       * The currently active workflow.
-       */
-      selectedWorkflow: Workflow | null;
-      /**
-       * History of generated images.
-       */
-      generations: Array<Generation>;
-      /**
-       * Whether a generation usage is currently in progress.
-       */
-      isGenerating: boolean;
-      /**
-       * Trigger a generation with the current workflow and inputs.
-       */
-      generate: () => Promise<void>;
-      /**
-       * Update a specific input field for a node in the workflow.
-       * @param nodeId - The ID of the node in the ComfyUI workflow.
-       * @param field - The field name to update.
-       * @param value - The new value.
-       */
-      setWorkflowInput: (nodeId: string, field: string, value: any) => void;
-      /**
-       * Switch the active workflow.
-       */
-      selectWorkflow: (workflow: Workflow) => void;
-    };
+    execution: ExecutionStore;
   };
   /**
    * UI utilities for managing panels and feedback.
@@ -395,54 +393,7 @@ export interface EmbeddrAPI {
       offset?: number;
     }>;
   };
-  /**
-   * Integration with ComfyUI resources.
-   */
-  comfy: {
-    /**
-     * Fetch available LoRAs.
-     */
-    getLoras: (
-      page?: number,
-      limit?: number,
-    ) => Promise<{
-      items: Array<string>;
-      total: number;
-      page: number;
-      pages: number;
-    }>;
-    /**
-     * Fetch available Checkpoint models.
-     */
-    getCheckpoints: (
-      page?: number,
-      limit?: number,
-    ) => Promise<{
-      items: Array<string>;
-      total: number;
-      page: number;
-      pages: number;
-    }>;
-    /**
-     * Fetch available Embeddings/Textual Inversions.
-     */
-    getEmbeddings: (
-      page?: number,
-      limit?: number,
-    ) => Promise<{
-      items: Array<string>;
-      total: number;
-      page: number;
-      pages: number;
-    }>;
-    /**
-     * Fetch available Samplers and Schedulers.
-     */
-    getSamplers: () => Promise<{
-      samplers: Array<string>;
-      schedulers: Array<string>;
-    }>;
-  };
+  models: ModelCatalogAPI;
   windows: {
     open: (id: string, title: string, componentId: string, props?: any) => void;
     spawn: (componentId: string, title: string, props?: any) => string;
