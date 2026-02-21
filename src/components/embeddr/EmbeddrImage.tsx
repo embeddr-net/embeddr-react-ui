@@ -3,10 +3,11 @@ import { EmbeddrDnDTypes } from "../../lib/dnd";
 import { cn } from "../../lib/utils";
 import { useOptionalEmbeddrAPI } from "../../context/EmbeddrContext";
 import {
-  ArtifactContextMenu,
-  type ArtifactContextMenuAction,
-  type ArtifactContextMenuContext,
+  ArtifactContextMenu
+  
+  
 } from "./ArtifactContextMenu";
+import type {ArtifactContextMenuAction, ArtifactContextMenuContext} from "./ArtifactContextMenu";
 
 export interface EmbeddrImageProps extends React.ImgHTMLAttributes<HTMLImageElement> {
   id?: string; // The Artifact ID (optional for external resources)
@@ -18,11 +19,11 @@ export interface EmbeddrImageProps extends React.ImgHTMLAttributes<HTMLImageElem
   artifactPayload?: Record<string, any>; // Optional full payload for DnD
   contextMenuDisabled?: boolean;
   contextMenuMode?: "merge" | "replace";
-  contextMenuActions?: ArtifactContextMenuAction[];
+  contextMenuActions?: Array<ArtifactContextMenuAction>;
   resolveContextMenuActions?: (input: {
-    defaults: ArtifactContextMenuAction[];
+    defaults: Array<ArtifactContextMenuAction>;
     context: ArtifactContextMenuContext;
-  }) => ArtifactContextMenuAction[];
+  }) => Array<ArtifactContextMenuAction>;
 }
 
 export const EmbeddrImage = React.forwardRef<

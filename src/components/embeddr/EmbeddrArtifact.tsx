@@ -5,10 +5,11 @@ import { EmbeddrDnDTypes } from "../../lib/dnd";
 import { useOptionalEmbeddrAPI } from "../../context/EmbeddrContext";
 import { EmbeddrImage } from "./EmbeddrImage";
 import {
-  ArtifactContextMenu,
-  type ArtifactContextMenuAction,
-  type ArtifactContextMenuContext,
+  ArtifactContextMenu
+  
+  
 } from "./ArtifactContextMenu";
+import type {ArtifactContextMenuAction, ArtifactContextMenuContext} from "./ArtifactContextMenu";
 
 export interface EmbeddrArtifactProps extends React.ImgHTMLAttributes<HTMLImageElement> {
   id?: string;
@@ -32,11 +33,11 @@ export interface EmbeddrArtifactProps extends React.ImgHTMLAttributes<HTMLImageE
   }>;
   contextMenuDisabled?: boolean;
   contextMenuMode?: "merge" | "replace";
-  contextMenuActions?: ArtifactContextMenuAction[];
+  contextMenuActions?: Array<ArtifactContextMenuAction>;
   resolveContextMenuActions?: (input: {
-    defaults: ArtifactContextMenuAction[];
+    defaults: Array<ArtifactContextMenuAction>;
     context: ArtifactContextMenuContext;
-  }) => ArtifactContextMenuAction[];
+  }) => Array<ArtifactContextMenuAction>;
 }
 
 function buildV1Base(backendUrl?: string, apiBackendUrl?: string) {
