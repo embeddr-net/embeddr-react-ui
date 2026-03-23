@@ -1,5 +1,12 @@
 import React from "react";
-import { Copy, ExternalLink, Eye, Image as ImageIcon } from "lucide-react";
+import {
+  Copy,
+  Download,
+  ExternalLink,
+  Eye,
+  Image as ImageIcon,
+} from "lucide-react";
+import { resolveApiBaseUrl } from "../../lib/url";
 import {
   ContextMenu,
   ContextMenuContent,
@@ -67,7 +74,7 @@ const toIdSet = (value: unknown) => {
 };
 
 function getMenuSettings(api: EmbeddrAPI | null): ArtifactContextMenuSettings {
-  if (!api?.settings.get) return DEFAULT_SETTINGS;
+  if (!api?.settings?.get) return DEFAULT_SETTINGS;
   const value = api.settings.get<ArtifactContextMenuSettings>(
     "ui.artifactContextMenu",
     DEFAULT_SETTINGS,
@@ -81,9 +88,187 @@ function getMenuSettings(api: EmbeddrAPI | null): ArtifactContextMenuSettings {
 function buildDefaultActions(
   context: ArtifactContextMenuContext,
 ): Array<ArtifactContextMenuAction> {
-  const { api, artifactId, contentUrl, src } = context;
+  const { artifactId, contentUrl, src } = context;
   const hasArtifactId = typeof artifactId === "string" && artifactId.length > 0;
   const resolvedUrl = contentUrl || src || "";
+
+  const getDownloadUrl = ({
+    api: actionApi,
+    artifactId: actionArtifactId,
+    contentUrl: actionContentUrl,
+    src: actionSrc,
+  }: ArtifactContextMenuContext) => {
+    if (actionContentUrl) return actionContentUrl;
+    if (actionSrc) return actionSrc;
+    if (actionArtifactId && actionApi?.artifacts?.getContentUrl) {
+      return actionApi.artifacts.getContentUrl(actionArtifactId);
+    }
+    if (actionArtifactId) {
+      const apiBase = resolveApiBaseUrl(actionApi?.utils?.backendUrl || "");
+      return `${apiBase}/artifacts/${actionArtifactId}/content`;
+    }
+    return "";
+  };
+
+  const extensionFromName = (value?: string | null) => {
+    const raw = String(value || "").trim();
+    if (!raw) return "";
+
+    const withoutQuery = raw.split("?")[0] ?? "";
+    const withoutHash = withoutQuery.split("#")[0] ?? "";
+    const lastSegment = withoutHash.split("/").pop() ?? withoutHash;
+    const dotIndex = lastSegment.lastIndexOf(".");
+    if (dotIndex <= 0 || dotIndex === lastSegment.length - 1) return "";
+
+    const ext = lastSegment.slice(dotIndex + 1).toLowerCase();
+    const clean = ext.replace(/[^a-z0-9]+/g, "");
+    return clean;
+  };
+
+  const extensionFromContentType = (contentType?: string | null) => {
+    const ct = String(contentType || "").toLowerCase();
+    if (!ct) return "";
+    if (ct.startsWith("image/jpeg")) return "jpg";
+    if (ct.startsWith("image/png")) return "png";
+    if (ct.startsWith("image/webp")) return "webp";
+    if (ct.startsWith("image/gif")) return "gif";
+    if (ct.startsWith("image/svg")) return "svg";
+    if (ct.startsWith("video/mp4")) return "mp4";
+    if (ct.startsWith("video/webm")) return "webm";
+    if (ct.startsWith("audio/mpeg")) return "mp3";
+    if (ct.startsWith("audio/wav")) return "wav";
+    if (ct.startsWith("audio/ogg")) return "ogg";
+    if (ct.startsWith("application/pdf")) return "pdf";
+    const slash = ct.indexOf("/");
+    if (slash >= 0) {
+      const inferred = ct.slice(slash + 1).split(";")[0] ?? "";
+      return inferred.trim();
+    }
+    return "";
+  };
+
+  const parseFilenameFromContentDisposition = (value: string | null) => {
+    if (!value) return "";
+    const utf8Match = value.match(/filename\*=UTF-8''([^;]+)/i);
+    if (utf8Match?.[1]) {
+      try {
+        return decodeURIComponent(utf8Match[1]).replace(/\"/g, "").trim();
+      } catch {}
+    }
+
+    const basicMatch = value.match(/filename=\"?([^\";]+)\"?/i);
+    return basicMatch?.[1]?.trim() || "";
+  };
+
+  const inferExtension = async ({
+    api: actionApi,
+    artifactId: actionArtifactId,
+    contentUrl: actionContentUrl,
+    src: actionSrc,
+    artifactPayload,
+  }: ArtifactContextMenuContext) => {
+    const fromPayload =
+      extensionFromName(
+        String(artifactPayload?.metadata_json?.filename || ""),
+      ) ||
+      extensionFromName(String(artifactPayload?.metadata_json?.name || "")) ||
+      extensionFromName(String(artifactPayload?.filename || "")) ||
+      extensionFromName(String(artifactPayload?.name || ""));
+
+    if (fromPayload) return fromPayload;
+
+    const fromUrl =
+      extensionFromName(String(actionContentUrl || "")) ||
+      extensionFromName(String(actionSrc || ""));
+    if (fromUrl) return fromUrl;
+
+    if (actionArtifactId && actionApi?.artifacts?.get) {
+      try {
+        const meta = await actionApi.artifacts.get(actionArtifactId);
+        const fromMeta =
+          extensionFromName(String(meta?.metadata_json?.filename || "")) ||
+          extensionFromName(String(meta?.metadata_json?.name || "")) ||
+          extensionFromName(String(meta?.uri || "")) ||
+          extensionFromContentType(
+            String(meta?.mime_type || meta?.content_type || ""),
+          );
+        if (fromMeta) return fromMeta;
+      } catch {}
+    }
+
+    return "";
+  };
+
+  const triggerBrowserDownload = (url: string, fileName: string) => {
+    const anchor = document.createElement("a");
+    anchor.href = url;
+    anchor.download = fileName;
+    anchor.rel = "noopener";
+    document.body.appendChild(anchor);
+    anchor.click();
+    anchor.remove();
+  };
+
+  const appendApiKeyQuery = (url: string, apiKey?: string | null) => {
+    if (!url || !apiKey) return url;
+    try {
+      const parsed = new URL(url, window.location.origin);
+      parsed.searchParams.set("api_key", apiKey);
+      return parsed.toString();
+    } catch {
+      return url;
+    }
+  };
+
+  const downloadViaBlob = async (
+    url: string,
+    fallbackName: string,
+    apiKey?: string | null,
+    forceArtifactId?: string,
+  ) => {
+    const headers = new Headers();
+    if (apiKey) headers.set("X-API-Key", apiKey);
+
+    const doFetch = async (targetUrl: string) =>
+      fetch(targetUrl, {
+        method: "GET",
+        headers,
+        credentials: "include",
+      });
+
+    let response = await doFetch(url);
+    if (!response.ok && apiKey) {
+      response = await doFetch(appendApiKeyQuery(url, apiKey));
+    }
+    if (!response.ok) {
+      throw new Error(`Download failed (${response.status})`);
+    }
+
+    const blob = await response.blob();
+    const headerName = parseFilenameFromContentDisposition(
+      response.headers.get("content-disposition"),
+    );
+    const headerExt = extensionFromName(headerName);
+    const typeExt = extensionFromContentType(
+      response.headers.get("content-type"),
+    );
+    const fallbackExt = extensionFromName(fallbackName);
+    const ext = headerExt || typeExt || fallbackExt;
+
+    const baseName =
+      forceArtifactId && String(forceArtifactId).trim()
+        ? String(forceArtifactId).trim()
+        : fallbackName.replace(/\.[^.]+$/, "");
+
+    const finalName = ext ? `${baseName}.${ext}` : baseName;
+
+    const objectUrl = URL.createObjectURL(blob);
+    try {
+      triggerBrowserDownload(objectUrl, finalName);
+    } finally {
+      window.setTimeout(() => URL.revokeObjectURL(objectUrl), 60_000);
+    }
+  };
 
   return [
     {
@@ -109,6 +294,7 @@ function buildDefaultActions(
         if (!actionApi || !actionArtifactId) return;
         actionApi.events.emit("ui:display_lightbox" as any, {
           artifact_ids: [actionArtifactId],
+          windowStrategy: "spawn",
         });
       },
     },
@@ -125,6 +311,44 @@ function buildDefaultActions(
           windowStrategy: "spawn",
           panelId: `core-media-frame-${actionArtifactId}-${Date.now().toString(36)}`,
         });
+      },
+    },
+    {
+      id: "core:download-artifact",
+      label: "Download",
+      icon: Download,
+      source: "core",
+      disabled: !hasArtifactId && !resolvedUrl,
+      onSelect: async (actionContext) => {
+        const downloadUrl = getDownloadUrl(actionContext);
+        if (!downloadUrl) {
+          actionContext.api?.toast.error("No downloadable URL available");
+          return;
+        }
+
+        const inferredExt = await inferExtension(actionContext);
+        const fallbackName = actionContext.artifactId
+          ? inferredExt
+            ? `${actionContext.artifactId}.${inferredExt}`
+            : String(actionContext.artifactId)
+          : inferredExt
+            ? `download.${inferredExt}`
+            : "download";
+
+        const apiKey = actionContext.api?.utils?.getApiKey?.() || null;
+
+        try {
+          await downloadViaBlob(
+            downloadUrl,
+            fallbackName,
+            apiKey,
+            actionContext.artifactId,
+          );
+          actionContext.api?.toast.info("Download started");
+        } catch {
+          triggerBrowserDownload(downloadUrl, fallbackName);
+          actionContext.api?.toast.info("Opening download URL");
+        }
       },
     },
     {
@@ -164,7 +388,7 @@ function buildPluginActions(
   context: ArtifactContextMenuContext,
 ): Array<ArtifactContextMenuAction> {
   const { api } = context;
-  const pluginActions = api?.plugins.getActions?.("image-context-menu") || [];
+  const pluginActions = api?.plugins?.getActions?.("image-context-menu") || [];
 
   return pluginActions
     .map(({ pluginId, def }) => {
@@ -179,7 +403,7 @@ function buildPluginActions(
         icon: def?.icon,
         onSelect: (actionContext: ArtifactContextMenuContext) => {
           const pluginApi =
-            actionContext.api?.plugins.getApi?.(pluginId) || actionContext.api;
+            actionContext.api?.plugins?.getApi?.(pluginId) || actionContext.api;
           const handler = def?.handler;
           if (typeof handler === "function") {
             handler(pluginApi, {

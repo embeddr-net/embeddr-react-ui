@@ -65,6 +65,18 @@ export function PanelHeader({
   onMouseDown,
   onTouchStart,
 }: PanelHeaderProps) {
+  const stopControlPropagation = (event: React.SyntheticEvent) => {
+    event.stopPropagation();
+  };
+
+  const handleHeaderDoubleClick = (event: React.MouseEvent<HTMLDivElement>) => {
+    const target = event.target as HTMLElement;
+    if (target.closest("button, [role='menuitem'], [data-slot='button']")) {
+      return;
+    }
+    onFoldToggle();
+  };
+
   return (
     <div
       className={cn(
@@ -82,7 +94,7 @@ export function PanelHeader({
         onShowTitleChange(true);
         if (isFolded) onFoldToggle();
       }}
-      onDoubleClick={onFoldToggle}
+      onDoubleClick={handleHeaderDoubleClick}
     >
       <div
         className={cn(
@@ -106,9 +118,14 @@ export function PanelHeader({
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button
+              type="button"
               variant="ghost"
               size="icon-sm"
               className="embeddr-panel-button embeddr-panel-button-settings h-6 w-6"
+              onPointerDown={stopControlPropagation}
+              onTouchStart={stopControlPropagation}
+              onMouseDown={stopControlPropagation}
+              onDoubleClick={stopControlPropagation}
             >
               <Settings className="h-3 w-3" />
             </Button>
@@ -165,9 +182,14 @@ export function PanelHeader({
 
         {onMinimize && (
           <Button
+            type="button"
             variant="ghost"
             size="icon-sm"
             className="embeddr-panel-button embeddr-panel-button-minimize h-6 w-6"
+            onPointerDown={stopControlPropagation}
+            onTouchStart={stopControlPropagation}
+            onMouseDown={stopControlPropagation}
+            onDoubleClick={stopControlPropagation}
             onClick={onMinimize}
           >
             <Minus className="h-4 w-4" />
@@ -175,10 +197,18 @@ export function PanelHeader({
         )}
 
         <Button
+          type="button"
           variant="ghost"
           size="icon-sm"
           className="embeddr-panel-button embeddr-panel-button-fold h-6 w-6"
-          onClick={onFoldToggle}
+          onPointerDown={stopControlPropagation}
+          onTouchStart={stopControlPropagation}
+          onMouseDown={stopControlPropagation}
+          onDoubleClick={stopControlPropagation}
+          onClick={(event) => {
+            event.stopPropagation();
+            onFoldToggle();
+          }}
         >
           {isFolded ? (
             titlePosition === "top" ? (
@@ -194,9 +224,14 @@ export function PanelHeader({
         </Button>
 
         <Button
+          type="button"
           variant="ghost"
           size="icon-sm"
           className="embeddr-panel-button embeddr-panel-button-close h-6 w-6"
+          onPointerDown={stopControlPropagation}
+          onTouchStart={stopControlPropagation}
+          onMouseDown={stopControlPropagation}
+          onDoubleClick={stopControlPropagation}
           onClick={onClose}
         >
           <X className="h-4 w-4" />

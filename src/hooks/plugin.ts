@@ -9,3 +9,5 @@ export { usePluginDrop } from "./usePluginDrop";
 export { useWebSocketEvent, useWebSocketStream } from "./useWebSocket";
 export { useArtifact, useImage, getArtifactUrls } from "./useArtifact";
 export { useResolvedArtifact } from "./useResolvedArtifact";
+export { usePanelLifecycle } from "./usePanelLifecycle";
+export type { PanelItem, PanelLifecycleConfig, PanelUpdatePayload } from "./usePanelLifecycle";

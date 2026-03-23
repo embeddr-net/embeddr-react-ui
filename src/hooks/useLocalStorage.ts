@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 export function useLocalStorage<T>(key: string, initialValue: T) {
   // Get from local storage then
@@ -20,27 +20,42 @@ export function useLocalStorage<T>(key: string, initialValue: T) {
 
   // Return a wrapped version of useState's setter function that ...
   // ... persists the new value to localStorage.
-  const setValue = (value: T | ((val: T) => T)) => {
-    try {
-      // Allow value to be a function so we have same API as useState
-      const valueToStore =
-        value instanceof Function ? value(storedValue) : value;
-      const serialized = JSON.stringify(valueToStore);
-      // Save state
-      setStoredValue(valueToStore);
-      // Save to local storage
-      if (typeof window !== "undefined") {
-        window.localStorage.setItem(key, serialized);
-        lastSerializedRef.current = serialized;
-        window.dispatchEvent(
-          new CustomEvent("local-storage-update", { detail: { key } }),
-        );
-        window.dispatchEvent(new Event("local-storage"));
+  const setValue = useCallback(
+    (value: T | ((val: T) => T)) => {
+      try {
+        setStoredValue((current) => {
+          const valueToStore =
+            value instanceof Function ? value(current) : value;
+          if (Object.is(valueToStore, current)) {
+            return current;
+          }
+          return valueToStore;
+        });
+      } catch (error) {
+        console.log(error);
       }
+    },
+    [],
+  );
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    try {
+      const serialized = JSON.stringify(storedValue);
+      if (serialized === lastSerializedRef.current) {
+        return;
+      }
+
+      window.localStorage.setItem(key, serialized);
+      lastSerializedRef.current = serialized;
+      window.dispatchEvent(
+        new CustomEvent("local-storage-update", { detail: { key } }),
+      );
+      window.dispatchEvent(new Event("local-storage"));
     } catch (error) {
       console.log(error);
     }
-  };
+  }, [key, storedValue]);
 
   useEffect(() => {
     const handleStorageChange = (event: Event) => {

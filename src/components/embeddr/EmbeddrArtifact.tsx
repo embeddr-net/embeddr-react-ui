@@ -4,6 +4,7 @@ import { cn } from "../../lib/utils";
 import { EmbeddrDnDTypes } from "../../lib/dnd";
 import { useOptionalEmbeddrAPI } from "../../context/EmbeddrContext";
 import { EmbeddrImage } from "./EmbeddrImage";
+import { resolveApiBaseUrl } from "../../lib/url";
 import {
   ArtifactContextMenu
   
@@ -40,10 +41,22 @@ export interface EmbeddrArtifactProps extends React.ImgHTMLAttributes<HTMLImageE
   }) => Array<ArtifactContextMenuAction>;
 }
 
-function buildV1Base(backendUrl?: string, apiBackendUrl?: string) {
-  let base = backendUrl || apiBackendUrl || "";
-  base = base.replace(/\/api\/v\d+\/?$/, "").replace(/\/+$/, "");
-  return base ? `${base}/api/v1` : "/api/v1";
+function buildApiBase(backendUrl?: string, apiBackendUrl?: string) {
+  return resolveApiBaseUrl(backendUrl || apiBackendUrl);
+}
+
+function appendAuthToUrl(url: string, apiKey?: string | null) {
+  if (!url || !apiKey) return url;
+  try {
+    const urlObj = new URL(
+      url,
+      typeof window !== "undefined" ? window.location.origin : "http://localhost",
+    );
+    urlObj.searchParams.set("api_key", apiKey);
+    return urlObj.toString();
+  } catch {
+    return url;
+  }
 }
 
 const AUDIO_EXTENSIONS = new Set(["mp3", "wav", "aac", "m4a", "flac", "ogg"]);
@@ -116,7 +129,7 @@ export const EmbeddrArtifact = React.forwardRef<
           }
         }
 
-        const base = buildV1Base(backendUrl, api?.utils.backendUrl);
+        const base = buildApiBase(backendUrl, api?.utils.backendUrl);
         if (artifactId) {
           const fallback = {
             id: artifactId,
@@ -164,25 +177,11 @@ export const EmbeddrArtifact = React.forwardRef<
     if (isAudio && !hasImagePreview) {
       const audioSrc = resolved?.content_url || url || "";
       const apiKey = api?.utils.getApiKey?.();
-      const appendAuth = (value: string) => {
-        if (!value || !apiKey) return value;
-        try {
-          const urlObj = new URL(value, window.location.origin);
-          urlObj.searchParams.set("api_key", apiKey);
-          return urlObj.toString();
-        } catch {
-          return value;
-        }
-      };
+      const appendAuth = (value: string) => appendAuthToUrl(value, apiKey);
+      const signedAudioSrc = appendAuth(audioSrc);
 
       const handleAudioDragStart = (e: React.DragEvent<HTMLDivElement>) => {
-        let baseUrl = backendUrl || api?.utils.backendUrl || "";
-        baseUrl = baseUrl.replace(/\/api\/v\d+\/?$/, "").replace(/\/$/, "");
-        if (baseUrl) {
-          baseUrl = `${baseUrl}/api/v1`;
-        } else {
-          baseUrl = "/api/v1";
-        }
+        const baseUrl = buildApiBase(backendUrl, api?.utils.backendUrl);
 
         let contentUrl = resolved?.content_url || url || "";
         let previewUrl = resolved?.preview_url || "";
@@ -247,7 +246,7 @@ export const EmbeddrArtifact = React.forwardRef<
             Audio
           </div>
           {variant === "content" && audioSrc ? (
-            <audio controls src={audioSrc} className="w-full max-w-xs" />
+            <audio controls src={signedAudioSrc} className="w-full max-w-xs" />
           ) : (
             <div className="text-xs">No preview available</div>
           )}
@@ -263,7 +262,7 @@ export const EmbeddrArtifact = React.forwardRef<
             artifactId: resolved?.id ?? id,
             artifactType: resolvedType,
             artifactPath,
-            src: audioSrc,
+            src: signedAudioSrc,
             contentUrl: resolved?.content_url,
             previewUrl: resolved?.preview_url,
             artifactPayload: resolved?.payload,

@@ -1,18 +1,19 @@
 import { useEmbeddr } from "./useEmbeddr";
+import { resolveApiBaseUrl } from "../lib/url";
 
 export interface ArtifactUrls {
   id: string;
-  /** The full URL to the raw file (V1 API) */
+  /** The full URL to the raw file */
   fileUrl: string;
   /** Alias for fileUrl */
   url: string;
-  /** The full URL to the preview image (V2 API) */
+  /** The full URL to the preview image */
   previewUrl: string;
   /** Alias for previewUrl */
   preview: string;
-  /** The API URL for artifact metadata (V2 API) */
+  /** The API URL for artifact metadata */
   artifactUrl: string;
-  /** The API URL for image metadata (V1 API) */
+  /** Legacy alias to artifact content URL */
   imageUrl: string;
 }
 
@@ -26,25 +27,11 @@ export const getArtifactUrls = (
   id: string | number,
 ): ArtifactUrls => {
   const strId = id.toString();
+  const apiBase = resolveApiBaseUrl(backendUrl);
 
-  // Helper to switch to V2 API base
-  const getV2Base = (url: string) => {
-    if (url.endsWith("/v1")) {
-      return url.replace(/\/v1$/, "/v1");
-    }
-    if (url.endsWith("/v1/")) {
-      return url.replace(/\/v1\/$/, "/v1/");
-    }
-    return `${url}/v1`;
-  };
-
-  const v2Base = getV2Base(backendUrl);
-
-  const infoUrl = `${backendUrl}/images/${strId}`;
-
-  const previewUrl = `${v2Base}/artifacts/${strId}/preview`;
-  const fileUrl = `${v2Base}/artifacts/${strId}/content`;
-  const artifactUrl = `${v2Base}/artifacts/${strId}`;
+  const previewUrl = `${apiBase}/artifacts/${strId}/preview`;
+  const fileUrl = `${apiBase}/artifacts/${strId}/content`;
+  const artifactUrl = `${apiBase}/artifacts/${strId}`;
 
   return {
     id: strId,

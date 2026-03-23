@@ -117,6 +117,10 @@
       "types": "./dist/components/visualization/index.d.ts",
       "import": "./dist/components/visualization/index.js"
     },
+    "./ui": {
+      "types": "./dist/components/ui/index.d.ts",
+      "import": "./dist/components/ui/index.js"
+    },
     "./components/ui": {
       "types": "./dist/components/ui/index.d.ts",
       "import": "./dist/components/ui/index.js"

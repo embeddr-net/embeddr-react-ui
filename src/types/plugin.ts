@@ -1,5 +1,5 @@
 import type React from "react";
-import type { ExecutionRecord, PipelineSpec, PromptImage } from "./domain";
+import type { ExecutionRecord, PromptImage } from "./domain";
 import type { EmbeddrMessage } from "./websocket";
 
 /**
@@ -41,17 +41,6 @@ export interface EmbeddrEventMap {
   "dataset:items_added": { dataset_id: number; count: number };
   "dataset:item_updated": { id: number; dataset_id: number; caption: string };
 
-  // ComfyUI Events
-  execution_start: { prompt_id: string };
-  executing: { node: string | null; display_node?: string; prompt_id: string };
-  progress: { value: number; max: number };
-  executed: {
-    node: string;
-    output: Record<string, unknown>;
-    prompt_id: string;
-  };
-  preview: string; // base64
-
   // Full raw message stream
   "websocket:message": EmbeddrMessage;
 
@@ -59,33 +48,6 @@ export interface EmbeddrEventMap {
   [key: string]: any;
 }
 
-export interface ExecutionStore {
-  pipelines: Array<PipelineSpec>;
-  selectedPipeline: PipelineSpec | null;
-  runs: Array<ExecutionRecord>;
-  isRunning: boolean;
-  run: () => Promise<void>;
-  setPipelineInput: (nodeId: string, field: string, value: any) => void;
-  selectPipeline: (pipeline: PipelineSpec) => void;
-}
-
-export interface ModelCatalogAPI {
-  list: (input: {
-    category: string;
-    page?: number;
-    limit?: number;
-  }) => Promise<{
-    items: Array<string>;
-    total: number;
-    page: number;
-    pages: number;
-    category: string;
-  }>;
-  listSamplers: () => Promise<{
-    samplers: Array<string>;
-    schedulers: Array<string>;
-  }>;
-}
 
 // --- API Interface ---
 /**
@@ -110,7 +72,6 @@ export interface EmbeddrAPI {
        */
       selectImage: (image: PromptImage | null) => void;
     };
-    execution: ExecutionStore;
   };
   /**
    * UI utilities for managing panels and feedback.
@@ -212,6 +173,7 @@ export interface EmbeddrAPI {
       q?: string;
       access_scope?: "personal" | "instance";
       type_name?: string;
+      media_type?: string;
       visibility?: "all" | "public" | "private";
       sort?: "new" | "random";
       ids?: Array<string>;
@@ -220,6 +182,72 @@ export interface EmbeddrAPI {
       id: string,
       input?: { include_owner_profiles?: boolean },
     ) => Promise<any>;
+    queryGraph: (input: {
+      seed_ids: Array<string>;
+      max_depth?: number;
+      direction?: "incoming" | "outgoing" | "both";
+      include_lineage?: boolean;
+      include_relations?: boolean;
+      limit_nodes?: number;
+      limit_edges?: number;
+      include_overlay_counts?: boolean;
+      filters?: {
+        relation_types_include?: Array<string>;
+        relation_types_exclude?: Array<string>;
+        relation_families_include?: Array<string>;
+        source_namespaces_include?: Array<string>;
+        source_namespaces_exclude?: Array<string>;
+        artifact_types_include?: Array<string>;
+        artifact_base_types_include?: Array<string>;
+        include_legacy_stash_contains?: boolean;
+      };
+    }) => Promise<{
+      nodes: Array<{
+        id: string;
+        type_name: string;
+        base_type_name: string;
+        label: string;
+        uri?: string | null;
+        overlay_counts?: {
+          features?: number;
+          embeddings?: number;
+          annotations?: number;
+        };
+        degree?: {
+          in?: number;
+          out?: number;
+          total?: number;
+        };
+        is_seed?: boolean;
+      }>;
+      edges: Array<{
+        id: string;
+        source_id: string;
+        target_id: string;
+        relation_type_raw: string;
+        relation_type_canonical: string;
+        relation_family: string;
+        source_namespace?: string;
+        is_lineage?: boolean;
+      }>;
+      meta: {
+        truncated?: boolean;
+        truncation_reason?: string | null;
+        nodes_returned?: number;
+        edges_returned?: number;
+      };
+    }>;
+    getGraphTaxonomy: () => Promise<{
+      relation_families: Array<{ id: string; label: string }>;
+      relation_types: Array<{
+        relation_type_raw: string;
+        relation_type_canonical: string;
+        relation_family: string;
+        description?: string;
+      }>;
+      source_namespaces: Array<string>;
+      namespace_groups: Array<{ group: string; namespaces: Array<string> }>;
+    }>;
     getContentUrl: (id: string) => string;
     resolve: (input: {
       id: string;
@@ -376,6 +404,17 @@ export interface EmbeddrAPI {
       limit?: number;
       offset?: number;
     }) => Promise<Array<any>>;
+    cancel: (executionId: string) => Promise<any>;
+    nudge: (
+      executionId: string,
+      input:
+        | string
+        | {
+            message: string;
+            mode?: "steer" | "goal_replace";
+            goal?: string;
+          },
+    ) => Promise<any>;
   };
   lotus: {
     invoke: (capId: string, input?: Record<string, any>) => Promise<any>;
@@ -393,7 +432,6 @@ export interface EmbeddrAPI {
       offset?: number;
     }>;
   };
-  models: ModelCatalogAPI;
   windows: {
     open: (id: string, title: string, componentId: string, props?: any) => void;
     spawn: (componentId: string, title: string, props?: any) => string;

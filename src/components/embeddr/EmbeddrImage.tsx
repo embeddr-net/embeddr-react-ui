@@ -1,6 +1,7 @@
 import React, { useMemo } from "react";
 import { EmbeddrDnDTypes } from "../../lib/dnd";
 import { cn } from "../../lib/utils";
+import { resolveApiBaseUrl } from "../../lib/url";
 import { useOptionalEmbeddrAPI } from "../../context/EmbeddrContext";
 import {
   ArtifactContextMenu
@@ -75,21 +76,7 @@ export const EmbeddrImage = React.forwardRef<
 
     // Default drag handler
     const handleDragStart = (e: React.DragEvent<HTMLImageElement>) => {
-      // Construct V2 API URLs
-      // We assume backendUrl is the root (e.g. http://localhost:8003) or api base.
-      // Ensure we use v2
-      let baseUrl = effectiveBackendUrl;
-
-      // Strip any existing api version
-      baseUrl = baseUrl.replace(/\/api\/v\d+\/?$/, "").replace(/\/$/, "");
-
-      // Append /api/v2
-      if (baseUrl) {
-        // Even if empty (relative), we want /api/v2
-        baseUrl = `${baseUrl}/api/v1`;
-      } else {
-        baseUrl = "/api/v1";
-      }
+      const baseUrl = resolveApiBaseUrl(effectiveBackendUrl);
 
       const apiKey = api?.utils.getApiKey?.();
       const appendAuth = (url: string) => {

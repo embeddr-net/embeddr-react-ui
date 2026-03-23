@@ -14,6 +14,7 @@ export * from "./dialog";
 export * from "./draggable-panel";
 export * from "./dropdown-menu";
 export * from "./files";
+export * from "./model-picker";
 export * from "./input-group";
 export * from "./input";
 export * from "./label";

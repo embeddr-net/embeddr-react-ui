@@ -4,6 +4,12 @@ on:
   push:
     tags:
       - "v*"
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: "Dry run (build only, no publish)"
+        type: boolean
+        default: false
 
 permissions:
   id-token: write # Required for OIDC
@@ -13,40 +19,54 @@ jobs:
   build-and-publish:
     runs-on: ubuntu-latest
     steps:
-      # Checkout code
       - name: Checkout repo
         uses: actions/checkout@v4
 
-      # Setup pnpm
       - name: Setup pnpm
         uses: pnpm/action-setup@v3
         with:
           version: 10.26.2
 
-      # Setup Node.js (latest stable)
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: "latest" # Node 24+ ensures npm ≥ 11.5.1
+          node-version: "latest"
           registry-url: "https://registry.npmjs.org"
           cache: "pnpm"
 
-      # Ensure npm is up-to-date
       - name: Upgrade npm
         run: npm install -g npm@latest
 
-      # Install dependencies
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      # Build the project
       - name: Build
         run: pnpm build
 
-      # Optional: Run tests
       - name: Run tests
         run: pnpm test || echo "No tests found"
 
-      # Publish to npm using OIDC
+      # Determine npm dist-tag from version string
+      # e.g. 0.2.0-alpha.1 → "next", 0.2.0 → "latest"
+      - name: Determine dist-tag
+        id: dist-tag
+        run: |
+          VERSION=$(node -p "require('./package.json').version")
+          echo "version=$VERSION"
+          if echo "$VERSION" | grep -qE '-(alpha|beta|rc|dev|canary)'; then
+            echo "tag=next" >> "$GITHUB_OUTPUT"
+          else
+            echo "tag=latest" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Publish to npm
-        run: pnpm publish --access public --no-git-checks --provenance
+        if: ${{ github.event.inputs.dry_run != 'true' }}
+        run: |
+          echo "Publishing v$(node -p "require('./package.json').version") with tag: ${{ steps.dist-tag.outputs.tag }}"
+          pnpm publish --access public --no-git-checks --provenance --tag ${{ steps.dist-tag.outputs.tag }}
+
+      - name: Dry run summary
+        if: ${{ github.event.inputs.dry_run == 'true' }}
+        run: |
+          echo "Dry run — build succeeded, skipping publish"
+          echo "Would publish v$(node -p "require('./package.json').version") with tag: ${{ steps.dist-tag.outputs.tag }}"

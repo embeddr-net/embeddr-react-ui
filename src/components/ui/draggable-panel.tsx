@@ -25,7 +25,7 @@ export interface PanelState {
   focus: () => void;
 }
 
-const PanelContext = React.createContext<PanelState | null>(null);
+export const PanelContext = React.createContext<PanelState | null>(null);
 
 export function usePanel() {
   const context = React.useContext(PanelContext);
@@ -62,6 +62,8 @@ export interface DraggablePanelProps {
   onMouseLeave?: (e: React.MouseEvent) => void;
   showTitle?: boolean;
   onShowTitleChange?: (show: boolean) => void;
+  openRevision?: number;
+  resetUiOnOpen?: boolean;
   hideHeader?: boolean;
   transparent?: boolean;
   isActive?: boolean;
@@ -79,6 +81,32 @@ interface AnchorState {
   anchorY: "top" | "bottom" | "center";
   offsetX: number;
   offsetY: number;
+}
+
+const PANEL_DEBUG_FLAG = "embeddr_debug_panels";
+const PANEL_DEBUG_EVENT = "embeddr-panel-debug";
+
+type PanelDebugPhase =
+  | "panel-open"
+  | "panel-close"
+  | "drag-threshold-start"
+  | "drag-commit"
+  | "drag-end"
+  | "drag-cancel"
+  | "resize-start"
+  | "resize-end"
+  | "interaction-force-cancel"
+  | "fold-toggle-request"
+  | "fold-toggle-apply"
+  | "fold-state-changed";
+
+function isPanelDebugEnabled(): boolean {
+  if (typeof window === "undefined") return false;
+  try {
+    return window.localStorage.getItem(PANEL_DEBUG_FLAG) === "1";
+  } catch {
+    return false;
+  }
 }
 
 export function DraggablePanel({
@@ -108,6 +136,8 @@ export function DraggablePanel({
   onMinimize,
   showTitle: controlledShowTitle,
   onShowTitleChange,
+  openRevision,
+  resetUiOnOpen = false,
   hideHeader = false,
   transparent = false,
   isActive = false,
@@ -143,6 +173,7 @@ export function DraggablePanel({
 
   const position = controlledPosition || internalPosition;
   const size = controlledSize || internalSize;
+  const isPositionControlled = controlledPosition !== undefined;
 
   const onPositionChange = useCallback(
     (pos: { x: number; y: number }) => {
@@ -185,10 +216,13 @@ export function DraggablePanel({
   // Forced height in PanelHeader is h-[42px]
   const headerHeight = hideHeader || !showTitle ? 16 : 42;
 
-  const setShowTitle = (show: boolean) => {
-    setInternalShowTitle(show);
-    onShowTitleChange?.(show);
-  };
+  const setShowTitle = useCallback(
+    (show: boolean) => {
+      setInternalShowTitle(show);
+      onShowTitleChange?.(show);
+    },
+    [onShowTitleChange, setInternalShowTitle],
+  );
 
   const panelRef = useRef<HTMLDivElement>(null);
   const dragStartRef = useRef({ x: 0, y: 0 });
@@ -196,12 +230,20 @@ export function DraggablePanel({
   const initialSizeRef = useRef({ width: 0, height: 0 });
   const pendingPointerRef = useRef<{ x: number; y: number } | null>(null);
   const frameRef = useRef<number | null>(null);
+  const pendingStartCleanupRef = useRef<(() => void) | null>(null);
+  const cancelingInteractionRef = useRef(false);
+  const isDraggingRef = useRef(isDragging);
+  const isResizingRef = useRef(isResizing);
+  const isFoldedRef = useRef(isFolded);
+  const showTitleRef = useRef(showTitle);
+  const titlePositionRef = useRef(titlePosition);
 
   // Refs for logic that needs current values without re-triggering effects
   const positionRef = useRef(position);
   const sizeRef = useRef(size);
   const anchorStateRef = useRef(anchorState);
   const isInteractingRef = useRef(false);
+  const lastHandledOpenRevisionRef = useRef<number | null>(null);
 
   useEffect(() => {
     positionRef.current = position;
@@ -212,10 +254,95 @@ export function DraggablePanel({
   useEffect(() => {
     anchorStateRef.current = anchorState;
   }, [anchorState]);
+  useEffect(() => {
+    isDraggingRef.current = isDragging;
+  }, [isDragging]);
+  useEffect(() => {
+    isResizingRef.current = isResizing;
+  }, [isResizing]);
+  useEffect(() => {
+    isFoldedRef.current = isFolded;
+  }, [isFolded]);
+  useEffect(() => {
+    showTitleRef.current = showTitle;
+  }, [showTitle]);
+  useEffect(() => {
+    titlePositionRef.current = titlePosition;
+  }, [titlePosition]);
+
+  const emitPanelDebug = useCallback(
+    (phase: PanelDebugPhase, extra?: Record<string, unknown>) => {
+      if (!isPanelDebugEnabled()) return;
+
+      const detail = {
+        ts: Date.now(),
+        phase,
+        id: id ?? "temp-panel",
+        title,
+        isOpen,
+        isDragging: isDraggingRef.current,
+        isResizing: isResizingRef.current,
+        isFolded: isFoldedRef.current,
+        showTitle: showTitleRef.current,
+        titlePosition: titlePositionRef.current,
+        pendingStart: pendingStartCleanupRef.current !== null,
+        position: positionRef.current,
+        size: sizeRef.current,
+        anchor: anchorStateRef.current,
+        ...extra,
+      };
+
+      window.dispatchEvent(new CustomEvent(PANEL_DEBUG_EVENT, { detail }));
+      console.debug(`[PanelDebug:${detail.id}] ${phase}`, detail);
+    },
+    [id, isOpen, title],
+  );
+
+  const clearPendingStartListeners = useCallback(() => {
+    pendingStartCleanupRef.current?.();
+    pendingStartCleanupRef.current = null;
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      clearPendingStartListeners();
+    };
+  }, [clearPendingStartListeners]);
+
+  useEffect(() => {
+    if (!resetUiOnOpen || openRevision == null) return;
+
+    if (lastHandledOpenRevisionRef.current == null) {
+      lastHandledOpenRevisionRef.current = openRevision;
+      return;
+    }
+
+    if (lastHandledOpenRevisionRef.current === openRevision) {
+      return;
+    }
+
+    lastHandledOpenRevisionRef.current = openRevision;
+    setIsFolded(false);
+    if (!hideHeader) {
+      setShowTitle(true);
+    }
+  }, [hideHeader, openRevision, resetUiOnOpen, setIsFolded, setShowTitle]);
+
+  useEffect(() => {
+    emitPanelDebug(isOpen ? "panel-open" : "panel-close", {
+      openRevision,
+      resetUiOnOpen,
+    });
+  }, [emitPanelDebug, isOpen, openRevision, resetUiOnOpen]);
+
+  useEffect(() => {
+    emitPanelDebug("fold-state-changed");
+  }, [emitPanelDebug, isFolded]);
 
   // Sync offsets when position changes externally
   // NOTE: Logic assumes position refers to the Header Top-Left
   useEffect(() => {
+    if (isPositionControlled) return;
     if (isInteractingRef.current) return;
     const { x, y } = positionRef.current;
     // We update anchor offsets based on current position
@@ -245,10 +372,11 @@ export function DraggablePanel({
         offsetY: newOffsetY,
       }));
     }
-  }, [position, size.width, size.height, setAnchorState]);
+  }, [isPositionControlled, position, size.width, size.height, setAnchorState]);
 
   // Handle Window Resize - Anchor Logic
   useEffect(() => {
+    if (isPositionControlled) return;
     const handleResize = () => {
       if (isInteractingRef.current) return;
 
@@ -276,9 +404,10 @@ export function DraggablePanel({
 
     window.addEventListener("resize", handleResize);
     return () => window.removeEventListener("resize", handleResize);
-  }, [onPositionChange, headerHeight]);
+  }, [headerHeight, isPositionControlled, onPositionChange]);
 
   useEffect(() => {
+    if (isPositionControlled) return;
     if (isOpen) {
       // Ensure panel header is within viewport when opened
       const { innerWidth, innerHeight } = window;
@@ -287,18 +416,56 @@ export function DraggablePanel({
         y: Math.min(Math.max(0, position.y), innerHeight - headerHeight),
       });
     }
-  }, [isOpen]);
+  }, [
+    headerHeight,
+    isOpen,
+    isPositionControlled,
+    onPositionChange,
+    position,
+    size,
+  ]);
 
   // ── helpers to start drag / resize from either mouse or touch ──
   const beginDrag = useCallback(
     (clientX: number, clientY: number, isTouch: boolean) => {
       onFocus?.();
       if (pinned) return;
+      const DRAG_COMMIT_DISTANCE = 3;
+      emitPanelDebug("drag-threshold-start", {
+        pointerType: isTouch ? "touch" : "mouse",
+        start: { x: clientX, y: clientY },
+      });
 
+      clearPendingStartListeners();
       dragStartRef.current = { x: clientX, y: clientY };
       initialPosRef.current = { ...positionRef.current };
+      let didCommitDrag = false;
+
+      const syncDragPosition = (nextX: number, nextY: number) => {
+        onPositionChange({
+          x: initialPosRef.current.x + (nextX - dragStartRef.current.x),
+          y: initialPosRef.current.y + (nextY - dragStartRef.current.y),
+        });
+      };
+
+      const finishCommittedDrag = () => {
+        window.dispatchEvent(
+          new CustomEvent("zen-panel-drag-end", {
+            detail: { windowId: id },
+          }),
+        );
+        emitPanelDebug("drag-end", {
+          pointerType: isTouch ? "touch" : "mouse",
+          position: positionRef.current,
+        });
+        onDragEnd?.();
+        handleInteractionEnd();
+        setIsDragging(false);
+      };
 
       const commitDrag = () => {
+        if (didCommitDrag) return;
+        didCommitDrag = true;
         setIsDragging(true);
         isInteractingRef.current = true;
         window.dispatchEvent(
@@ -306,6 +473,9 @@ export function DraggablePanel({
             detail: { windowId: id },
           }),
         );
+        emitPanelDebug("drag-commit", {
+          pointerType: isTouch ? "touch" : "mouse",
+        });
       };
 
       if (isTouch) {
@@ -315,14 +485,38 @@ export function DraggablePanel({
           if (!t) return;
           const dx = Math.abs(t.clientX - dragStartRef.current.x);
           const dy = Math.abs(t.clientY - dragStartRef.current.y);
-          if (dx > 3 || dy > 3) {
+          if (dx > DRAG_COMMIT_DISTANCE || dy > DRAG_COMMIT_DISTANCE) {
             ev.preventDefault(); // prevent scroll once we commit to drag
             commitDrag();
-            window.removeEventListener("touchmove", handleTouchMove);
-            window.removeEventListener("touchend", handleTouchEnd);
+          }
+          if (didCommitDrag) {
+            ev.preventDefault();
+            syncDragPosition(t.clientX, t.clientY);
           }
         };
-        const handleTouchEnd = () => {
+        const handleTouchEnd = (ev: TouchEvent) => {
+          if (!didCommitDrag) {
+            const t = ev.changedTouches[0];
+            if (t) {
+              const dx = Math.abs(t.clientX - dragStartRef.current.x);
+              const dy = Math.abs(t.clientY - dragStartRef.current.y);
+              if (dx > DRAG_COMMIT_DISTANCE || dy > DRAG_COMMIT_DISTANCE) {
+                commitDrag();
+                syncDragPosition(t.clientX, t.clientY);
+              }
+            }
+          }
+          clearPendingStartListeners();
+          if (didCommitDrag) {
+            finishCommittedDrag();
+          } else {
+            emitPanelDebug("drag-cancel", {
+              pointerType: "touch",
+              reason: "below-threshold",
+            });
+          }
+        };
+        pendingStartCleanupRef.current = () => {
           window.removeEventListener("touchmove", handleTouchMove);
           window.removeEventListener("touchend", handleTouchEnd);
         };
@@ -334,13 +528,33 @@ export function DraggablePanel({
         const handleInitialMove = (moveEvent: MouseEvent) => {
           const dx = Math.abs(moveEvent.clientX - dragStartRef.current.x);
           const dy = Math.abs(moveEvent.clientY - dragStartRef.current.y);
-          if (dx > 3 || dy > 3) {
+          if (dx > DRAG_COMMIT_DISTANCE || dy > DRAG_COMMIT_DISTANCE) {
             commitDrag();
-            window.removeEventListener("mousemove", handleInitialMove);
-            window.removeEventListener("mouseup", handleInitialUp);
+          }
+          if (didCommitDrag) {
+            syncDragPosition(moveEvent.clientX, moveEvent.clientY);
           }
         };
-        const handleInitialUp = () => {
+        const handleInitialUp = (upEvent: MouseEvent) => {
+          if (!didCommitDrag) {
+            const dx = Math.abs(upEvent.clientX - dragStartRef.current.x);
+            const dy = Math.abs(upEvent.clientY - dragStartRef.current.y);
+            if (dx > DRAG_COMMIT_DISTANCE || dy > DRAG_COMMIT_DISTANCE) {
+              commitDrag();
+              syncDragPosition(upEvent.clientX, upEvent.clientY);
+            }
+          }
+          clearPendingStartListeners();
+          if (didCommitDrag) {
+            finishCommittedDrag();
+          } else {
+            emitPanelDebug("drag-cancel", {
+              pointerType: "mouse",
+              reason: "below-threshold",
+            });
+          }
+        };
+        pendingStartCleanupRef.current = () => {
           window.removeEventListener("mousemove", handleInitialMove);
           window.removeEventListener("mouseup", handleInitialUp);
         };
@@ -348,7 +562,15 @@ export function DraggablePanel({
         window.addEventListener("mouseup", handleInitialUp);
       }
     },
-    [pinned, onFocus, id],
+    [
+      clearPendingStartListeners,
+      pinned,
+      onFocus,
+      onPositionChange,
+      id,
+      emitPanelDebug,
+      onDragEnd,
+    ],
   );
 
   const handleMouseDown = useCallback(
@@ -388,12 +610,15 @@ export function DraggablePanel({
     (clientX: number, clientY: number) => {
       onFocus?.();
       if (pinned) return;
+      emitPanelDebug("resize-start", {
+        start: { x: clientX, y: clientY },
+      });
       setIsResizing(true);
       isInteractingRef.current = true;
       dragStartRef.current = { x: clientX, y: clientY };
       initialSizeRef.current = { ...sizeRef.current };
     },
-    [pinned, onFocus],
+    [emitPanelDebug, pinned, onFocus],
   );
 
   const handleResizeStart = (e: React.MouseEvent) => {
@@ -411,7 +636,7 @@ export function DraggablePanel({
     [beginResize],
   );
 
-  const handleInteractionEnd = () => {
+  const handleInteractionEnd = useCallback(() => {
     const { innerWidth, innerHeight } = window;
     const { x, y } = positionRef.current;
 
@@ -455,9 +680,123 @@ export function DraggablePanel({
       }
     }
 
-    setAnchorState({ anchorX, anchorY, offsetX, offsetY });
+    if (!isPositionControlled) {
+      setAnchorState({ anchorX, anchorY, offsetX, offsetY });
+    }
     isInteractingRef.current = false;
-  };
+  }, [headerHeight, isPositionControlled, setAnchorState]);
+
+  const forceCancelInteraction = useCallback(() => {
+    if (cancelingInteractionRef.current) return;
+    const hadInteraction =
+      isInteractingRef.current ||
+      isDragging ||
+      isResizing ||
+      pendingStartCleanupRef.current !== null;
+    if (!hadInteraction) return;
+
+    cancelingInteractionRef.current = true;
+
+    clearPendingStartListeners();
+
+    if (frameRef.current !== null) {
+      window.cancelAnimationFrame(frameRef.current);
+      frameRef.current = null;
+    }
+    pendingPointerRef.current = null;
+
+    const wasDragging = isDragging;
+    const wasResizing = isResizing;
+
+    if (wasDragging) {
+      window.dispatchEvent(
+        new CustomEvent("zen-panel-drag-end", {
+          detail: { windowId: id },
+        }),
+      );
+      onDragEnd?.();
+    }
+    if (wasResizing) {
+      onResizeEnd?.();
+    }
+
+    if (wasDragging || wasResizing) {
+      emitPanelDebug("interaction-force-cancel", {
+        wasDragging,
+        wasResizing,
+      });
+      handleInteractionEnd();
+    }
+
+    setIsDragging(false);
+    setIsResizing(false);
+    document.body.classList.remove("embeddr-panel-interacting");
+
+    cancelingInteractionRef.current = false;
+  }, [
+    clearPendingStartListeners,
+    handleInteractionEnd,
+    id,
+    isDragging,
+    isResizing,
+    onDragEnd,
+    emitPanelDebug,
+    onResizeEnd,
+  ]);
+
+  useEffect(() => {
+    if (!isDragging && !isResizing) return;
+
+    const handleBlur = () => forceCancelInteraction();
+    const handleVisibility = () => {
+      if (document.hidden) {
+        forceCancelInteraction();
+      }
+    };
+
+    window.addEventListener("blur", handleBlur);
+    document.addEventListener("visibilitychange", handleVisibility);
+    return () => {
+      window.removeEventListener("blur", handleBlur);
+      document.removeEventListener("visibilitychange", handleVisibility);
+    };
+  }, [forceCancelInteraction, isDragging, isResizing]);
+
+  const handleFoldToggle = useCallback(
+    (nextFolded?: boolean) => {
+      emitPanelDebug("fold-toggle-request", {
+        requested: nextFolded,
+        isDragging,
+        isResizing,
+        hasPendingStart: pendingStartCleanupRef.current !== null,
+      });
+      if (
+        isDragging ||
+        isResizing ||
+        pendingStartCleanupRef.current !== null
+      ) {
+        forceCancelInteraction();
+      } else {
+        clearPendingStartListeners();
+      }
+
+      const previous = isFoldedRef.current;
+      const next = nextFolded ?? !previous;
+      emitPanelDebug("fold-toggle-apply", {
+        previous,
+        next,
+      });
+      setIsFolded(next);
+    },
+    [
+      clearPendingStartListeners,
+      emitPanelDebug,
+      forceCancelInteraction,
+      isDragging,
+      isResizing,
+      setIsFolded,
+    ],
+  );
 
   useEffect(() => {
     // Shared move handler for mouse & touch
@@ -495,7 +834,10 @@ export function DraggablePanel({
       });
     };
 
+    let ended = false;
     const endInteraction = () => {
+      if (ended) return;
+      ended = true;
       if (frameRef.current !== null) {
         window.cancelAnimationFrame(frameRef.current);
         frameRef.current = null;
@@ -507,10 +849,17 @@ export function DraggablePanel({
             detail: { windowId: id },
           }),
         );
+        emitPanelDebug("drag-end", {
+          pointerType: "deferred",
+          position: positionRef.current,
+        });
         onDragEnd?.();
         handleInteractionEnd();
       }
       if (isResizing) {
+        emitPanelDebug("resize-end", {
+          size: sizeRef.current,
+        });
         onResizeEnd?.();
         handleInteractionEnd();
       }
@@ -521,6 +870,13 @@ export function DraggablePanel({
     const handleMouseMove = (e: MouseEvent) =>
       scheduleMove(e.clientX, e.clientY);
     const handleMouseUp = () => endInteraction();
+    const handlePointerUp = () => endInteraction();
+    const handlePointerCancel = () => endInteraction();
+    const handleWindowLeave = (e: MouseEvent) => {
+      if (!e.relatedTarget) {
+        endInteraction();
+      }
+    };
 
     const handleTouchMove = (e: TouchEvent) => {
       e.preventDefault(); // prevent scroll while dragging/resizing
@@ -529,20 +885,30 @@ export function DraggablePanel({
       scheduleMove(t.clientX, t.clientY);
     };
     const handleTouchEnd = () => endInteraction();
+    const handleTouchCancel = () => endInteraction();
 
     if (isDragging || isResizing) {
       window.addEventListener("mousemove", handleMouseMove);
-      window.addEventListener("mouseup", handleMouseUp);
+      window.addEventListener("mouseup", handleMouseUp, true);
+      window.addEventListener("pointerup", handlePointerUp, true);
+      window.addEventListener("pointercancel", handlePointerCancel, true);
       window.addEventListener("touchmove", handleTouchMove, { passive: false });
-      window.addEventListener("touchend", handleTouchEnd);
+      window.addEventListener("touchend", handleTouchEnd, true);
+      window.addEventListener("touchcancel", handleTouchCancel, true);
+      window.addEventListener("mouseleave", handleWindowLeave, true);
+      clearPendingStartListeners();
       document.body.classList.add("embeddr-panel-interacting");
     }
 
     return () => {
       window.removeEventListener("mousemove", handleMouseMove);
-      window.removeEventListener("mouseup", handleMouseUp);
+      window.removeEventListener("mouseup", handleMouseUp, true);
+      window.removeEventListener("pointerup", handlePointerUp, true);
+      window.removeEventListener("pointercancel", handlePointerCancel, true);
       window.removeEventListener("touchmove", handleTouchMove);
-      window.removeEventListener("touchend", handleTouchEnd);
+      window.removeEventListener("touchend", handleTouchEnd, true);
+      window.removeEventListener("touchcancel", handleTouchCancel, true);
+      window.removeEventListener("mouseleave", handleWindowLeave, true);
       document.body.classList.remove("embeddr-panel-interacting");
       if (frameRef.current !== null) {
         window.cancelAnimationFrame(frameRef.current);
@@ -558,6 +924,7 @@ export function DraggablePanel({
     onPositionChange,
     onSizeChange,
     onDragEnd,
+    emitPanelDebug,
     onResizeEnd,
   ]);
 
@@ -584,7 +951,7 @@ export function DraggablePanel({
     isHeaderHidden: hideHeader || !showTitle,
     headerHeight,
     close: onClose,
-    collapse: (v) => setIsFolded(v ?? !isFolded),
+    collapse: (v) => handleFoldToggle(v),
     pin: (v) => onPinChange?.(v ?? !pinned),
     focus: () => onFocus?.(),
   };
@@ -600,7 +967,7 @@ export function DraggablePanel({
       onTouchStart={handleTouchStart}
       onDoubleClick={() => {
         if (!hideHeader) setShowTitle(true);
-        setIsFolded(!isFolded);
+        handleFoldToggle();
       }}
       onContextMenu={(e) => {
         // Always allow showing context menu if header is missing but not legally disabled
@@ -612,6 +979,33 @@ export function DraggablePanel({
       }}
       title="Drag to move | Double-click to fold | Right-click to show Header"
     />
+  );
+
+  const forceUnfold = useCallback(() => {
+    if (!hideHeader) {
+      setShowTitle(true);
+    }
+    handleFoldToggle(false);
+  }, [handleFoldToggle, hideHeader, setShowTitle]);
+
+  const foldedRecoveryHandle = isFolded && (!showTitle || hideHeader) && (
+    <button
+      type="button"
+      className={cn(
+        "absolute top-0.5 right-0.5 z-60 h-5 rounded border border-border/60 bg-background/90 px-1.5 text-[10px] font-medium text-foreground hover:bg-muted/80",
+        "no-drag",
+      )}
+      onMouseDown={(event) => {
+        event.stopPropagation();
+      }}
+      onClick={(event) => {
+        event.stopPropagation();
+        forceUnfold();
+      }}
+      title="Expand panel"
+    >
+      Open
+    </button>
   );
 
   return (
@@ -670,6 +1064,18 @@ export function DraggablePanel({
           handleTouchStart(e);
         }
       }}
+      onDoubleClick={(event) => {
+        if (!isFolded) return;
+        const target = event.target as HTMLElement;
+        if (
+          target.closest(
+            "button, input, textarea, select, [role='menuitem'], [data-slot='button']",
+          )
+        ) {
+          return;
+        }
+        forceUnfold();
+      }}
       onMouseEnter={(e) => {
         e.stopPropagation();
         onMouseEnter?.(e);
@@ -681,6 +1087,7 @@ export function DraggablePanel({
       tabIndex={-1}
     >
       {hiddenTitleHandle}
+      {foldedRecoveryHandle}
 
       {showTitle && !hideHeader && (
         <PanelHeader
@@ -698,7 +1105,7 @@ export function DraggablePanel({
           onTitlePositionChange={setTitlePosition}
           onShowTitleChange={setShowTitle}
           onMinimize={onMinimize}
-          onFoldToggle={() => setIsFolded(!isFolded)}
+          onFoldToggle={handleFoldToggle}
           onClose={onClose}
           onMouseDown={handleMouseDown}
           onTouchStart={handleTouchStart}
@@ -738,6 +1145,14 @@ export function DraggablePanel({
               cursor: isDragging ? "move" : "nwse-resize",
               backgroundColor: "transparent",
               touchAction: "none",
+            }}
+            onMouseUp={() => forceCancelInteraction()}
+            onPointerUp={() => forceCancelInteraction()}
+            onPointerCancel={() => forceCancelInteraction()}
+            onTouchEnd={() => forceCancelInteraction()}
+            onTouchCancel={() => forceCancelInteraction()}
+            onContextMenu={(event) => {
+              event.preventDefault();
             }}
           />,
           document.body,

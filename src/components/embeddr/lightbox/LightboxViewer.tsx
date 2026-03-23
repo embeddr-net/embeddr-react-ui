@@ -344,7 +344,7 @@ export const LightboxViewer = ({
           variant="outline"
           size="icon-sm"
           onClick={onClose}
-          className="cursor-pointer hover:bg-secondary/20 fixed top-2 right-1.5 z-50 flex items-center justify-center group"
+          className="cursor-pointer hover:bg-secondary/20 absolute top-2 right-2 z-50 flex items-center justify-center group"
           aria-label="Close dialog"
         >
           <X className="text-muted-foreground group-hover:text-foreground transition-colors" />
