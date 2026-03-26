@@ -5,10 +5,13 @@ import {
   DialogContent,
   DialogDescription,
   DialogTitle,
-} from "../ui/dialog";
-import { LightboxViewer } from "../ui/lightbox/LightboxViewer";
+} from "../components/ui";
+import { LightboxViewer } from "../components/embeddr/lightbox";
 import { ImageDialogContext } from "../context/ImageDialogContext";
-import type { GalleryWithTotal } from "../context/ImageDialogContext";
+import type {
+  GalleryWithTotal,
+  ImageDialogOpenContext,
+} from "../context/ImageDialogContext";
 import type { ReactNode } from "react";
 import type { Gallery, GalleryImage, ImageAction } from "../types/gallery";
 
@@ -19,28 +22,54 @@ export const ImageDialogProvider = ({ children }: { children: ReactNode }) => {
   const [imageSrc, setImageSrc] = useState<string | null>(null);
   const [galleries, setGalleries] = useState<Array<Gallery>>([]);
   const [currentGallery, setCurrentGallery] = useState<GalleryWithTotal | null>(
-    null
+    null,
   );
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [pendingIndex, setPendingIndex] = useState<number | null>(null);
   const [actions, setActions] = useState<Array<ImageAction>>([]);
+  const [apiKey, setApiKey] = useState<string>("");
+
+  const isInlineGalleryContext = (
+    value: ImageDialogOpenContext | undefined,
+  ): value is {
+    images: Array<GalleryImage>;
+    id?: string;
+    name?: string;
+    thumbnail?: string;
+    totalImages?: number;
+    fetchMore?: GalleryWithTotal["fetchMore"];
+  } => {
+    return (
+      typeof value === "object" &&
+      value !== null &&
+      "images" in value &&
+      Array.isArray(value.images)
+    );
+  };
 
   const openImage = useCallback(
     (
       src: string,
-      galleryOrMetadata?: any,
+      galleryOrMetadata?: ImageDialogOpenContext,
       initialIndex?: number,
       customActions: Array<ImageAction> = [],
-      imagePath?: string
+      imagePath?: string,
     ) => {
       setImageSrc(src);
 
       // Determine if we have a real gallery or just a single image context
-      const isGallery =
-        galleryOrMetadata && Array.isArray(galleryOrMetadata.images);
+      const isGallery = isInlineGalleryContext(galleryOrMetadata);
 
       const gallery: GalleryWithTotal = isGallery
-        ? (galleryOrMetadata as GalleryWithTotal)
+        ? {
+            id: galleryOrMetadata.id || "inline-gallery",
+            name: galleryOrMetadata.name || "Image Viewer",
+            thumbnail: galleryOrMetadata.thumbnail || src,
+            images: galleryOrMetadata.images,
+            totalImages:
+              galleryOrMetadata.totalImages || galleryOrMetadata.images.length,
+            fetchMore: galleryOrMetadata.fetchMore,
+          }
         : {
             id: "single-image",
             name: "Image Viewer",
@@ -69,7 +98,7 @@ export const ImageDialogProvider = ({ children }: { children: ReactNode }) => {
       setActions(customActions);
       setIsOpen(true);
     },
-    []
+    [],
   );
 
   const closeImage = useCallback(() => {
@@ -169,10 +198,10 @@ export const ImageDialogProvider = ({ children }: { children: ReactNode }) => {
 
   const setGalleryImages = useCallback(
     (
-      images: Array<GalleryImage> | any,
+      images: Array<GalleryImage>,
       replace = true,
       newIndex?: number,
-      totalImages?: number
+      totalImages?: number,
     ) => {
       setCurrentGallery((prev) => {
         if (!prev) return null;
@@ -188,7 +217,7 @@ export const ImageDialogProvider = ({ children }: { children: ReactNode }) => {
         setCurrentImageIndex(newIndex);
       }
     },
-    []
+    [],
   );
 
   const contextValue = useMemo(
@@ -200,6 +229,8 @@ export const ImageDialogProvider = ({ children }: { children: ReactNode }) => {
       currentGallery,
       currentImageIndex,
       isOpen,
+      apiKey,
+      setApiKey,
     }),
     [
       openImage,
@@ -209,7 +240,8 @@ export const ImageDialogProvider = ({ children }: { children: ReactNode }) => {
       currentGallery,
       currentImageIndex,
       isOpen,
-    ]
+      apiKey,
+    ],
   );
 
   return (
@@ -217,7 +249,7 @@ export const ImageDialogProvider = ({ children }: { children: ReactNode }) => {
       {children}
       <Dialog open={isOpen} onOpenChange={(open) => !open && closeImage()}>
         <DialogContent
-          className="dark max-h-[calc(100%-4rem)] h-[calc(100%-4rem)] w-full overflow-hidden flex items-center justify-center bg-black/95! backdrop-blur-sm p-0 border-2 border-border focus:outline-none data-[state=open]:animate-none data-[state=closed]:animate-none"
+          className="max-h-[calc(100%-4rem)] h-[calc(100%-4rem)] w-full overflow-hidden bg-background/85 flex items-center justify-center backdrop-blur-sm p-0 border-2 border-border focus:outline-none data-[state=open]:animate-none data-[state=closed]:animate-none"
           showCloseButton={false}
         >
           <VisuallyHidden>
@@ -227,6 +259,7 @@ export const ImageDialogProvider = ({ children }: { children: ReactNode }) => {
             </DialogDescription>
           </VisuallyHidden>
           <LightboxViewer
+            apiKey={apiKey}
             imageSrc={imageSrc}
             gallery={currentGallery}
             imageIndex={currentImageIndex}

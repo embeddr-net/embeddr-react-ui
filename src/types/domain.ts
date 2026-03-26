@@ -1,9 +1,16 @@
 export interface PromptImage {
-  id: number;
+  id: string;
   url: string;
   image_url: string; // Added for compatibility
   thumb_url?: string; // Added for compatibility
-  media_type?: "image" | "video" | "audio" | "text";
+  media_type?:
+    | "image"
+    | "video"
+    | "audio"
+    | "text"
+    | "collection"
+    | "document"
+    | "web";
   duration?: number;
   fps?: number;
   frame_count?: number;
@@ -35,10 +42,12 @@ export interface PromptImage {
   parents?: Array<PromptImage>;
   children?: Array<PromptImage>;
   phash?: string | null;
+  sha256?: string | null;
   is_archived?: boolean;
+  updated_at?: string;
 }
 
-export interface Workflow {
+export interface PipelineSpec {
   id: number;
   name: string;
   description?: string;
@@ -59,9 +68,9 @@ export interface Workflow {
   updated_at: string;
 }
 
-export interface Generation {
+export interface ExecutionRecord {
   id: string;
-  prompt_id?: string; // ComfyUI prompt ID
+  prompt_id?: string;
   status: "pending" | "queued" | "processing" | "completed" | "failed";
   prompt: string;
   images?: Array<string>;

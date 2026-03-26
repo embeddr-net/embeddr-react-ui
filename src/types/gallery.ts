@@ -20,10 +20,6 @@ export interface Gallery {
   fetchMore?: (direction: "next" | "prev", offset: number) => Promise<void>;
 }
 
-export interface GalleriesData {
-  galleries: Array<Gallery>;
-}
-
 export interface ImageAction {
   id: string;
   icon: ReactNode;

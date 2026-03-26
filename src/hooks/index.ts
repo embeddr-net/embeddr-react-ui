@@ -1,3 +1,3 @@
-export { useExternalNav } from "./useExternalNav";
-export { useImageDialog } from "./useImageDialog";
-export { useLocalStorage } from "./useLocalStorage";
+// --- Grouped hook entrypoints ---
+export * from "./plugin";
+export * from "./distro";

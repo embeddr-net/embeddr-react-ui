@@ -2,6 +2,7 @@
   // Visit https://aka.ms/tsconfig to read more about this file
   "compilerOptions": {
     // File Layout
+    "rootDir": "./src",
     "outDir": "./dist",
     // Environment Settings
     // See also https://aka.ms/tsconfig/module
@@ -51,7 +52,12 @@
         "../embeddr-react-ui/src/providers/index.ts"
       ],
       "@embeddr/react-ui/providers/*": ["../embeddr-react-ui/src/providers/*"],
-      "@embeddr/react-ui/ui/*": ["../embeddr-react-ui/src/ui/*"],
+      "@embeddr/react-ui/ui": [
+        "../embeddr-react-ui/src/components/ui/index.ts"
+      ],
+      "@embeddr/react-ui/ui/*": [
+        "../embeddr-react-ui/src/components/ui/*"
+      ],
       "@embeddr/react-ui/context/*": ["../embeddr-react-ui/src/context/*"],
       "@embeddr/react-ui/types/*": ["../embeddr-react-ui/src/types/*"]
     }

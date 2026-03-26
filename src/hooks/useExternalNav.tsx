@@ -1,7 +1,11 @@
 import { createContext, useContext } from "react";
 
-type ExternalNavContextType = {
-  openExternal: (url: string) => void;
+export type ExternalNavContextType = {
+  openExternal: (
+    url: string,
+    skipConfirmation?: boolean,
+    newTab?: boolean,
+  ) => void;
 };
 
 export const ExternalNavContext = createContext<

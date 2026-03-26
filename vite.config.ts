@@ -1,12 +1,44 @@
+/// <reference types="vitest" />
 import { dirname, resolve } from "node:path";
+import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
+// Auto-generate externals from package.json — no more manual maintenance
+const pkg = JSON.parse(
+  readFileSync(resolve(__dirname, "package.json"), "utf-8"),
+);
+const externalDeps = [
+  ...Object.keys(pkg.peerDependencies ?? {}),
+  ...Object.keys(pkg.dependencies ?? {}),
+  ...Object.keys(pkg.optionalDependencies ?? {}),
+];
+// Match both direct imports and deep imports (e.g. @radix-ui/react-dialog/dist/...)
+const externalPattern = new RegExp(
+  `^(${externalDeps.map((d) => d.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")).join("|")})(/.*)?$`,
+);
+
 export default defineConfig({
   plugins: [react()],
+  resolve: {
+    dedupe: ["three", "@react-three/fiber", "@react-three/drei"],
+    alias: {
+      three: resolve(__dirname, "node_modules/three"),
+      "@react-three/fiber": resolve(
+        __dirname,
+        "node_modules/@react-three/fiber",
+      ),
+      "@react-three/drei": resolve(__dirname, "node_modules/@react-three/drei"),
+    },
+  },
+  test: {
+    globals: true,
+    environment: "jsdom",
+    setupFiles: "./src/test/setup.ts",
+  },
   build: {
     lib: {
       entry: resolve(__dirname, "src/index.tsx"),
@@ -14,32 +46,10 @@ export default defineConfig({
       fileName: (format, entryName) => `${entryName}.js`,
     },
     rollupOptions: {
-      external: [
-        "react",
-        "react-dom",
-        "react/jsx-runtime",
-        "@radix-ui/react-dialog",
-        "@radix-ui/react-accordion",
-        "@radix-ui/react-aspect-ratio",
-        "@radix-ui/react-avatar",
-        "@radix-ui/react-checkbox",
-        "@radix-ui/react-dropdown-menu",
-        "@radix-ui/react-label",
-        "@radix-ui/react-menubar",
-        "@radix-ui/react-progress",
-        "@radix-ui/react-scroll-area",
-        "@radix-ui/react-select",
-        "@radix-ui/react-separator",
-        "@radix-ui/react-slider",
-        "@radix-ui/react-slot",
-        "@radix-ui/react-switch",
-        "react-resizable-panels",
-        "@radix-ui/react-tabs",
-        "next-themes",
-        "sonner",
-        "@react-three/fiber",
-        "three",
-      ],
+      external: (id) => {
+        if (id === "react/jsx-runtime") return true;
+        return externalPattern.test(id);
+      },
       output: {
         preserveModules: true,
         preserveModulesRoot: "src",

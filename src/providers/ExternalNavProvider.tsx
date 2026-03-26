@@ -1,12 +1,12 @@
 import React, { useState } from "react";
 import {
+  Button,
   Dialog,
   DialogContent,
   DialogDescription,
   DialogFooter,
   DialogTitle,
-} from "../ui/dialog";
-import { Button } from "../ui/button";
+} from "../components/ui";
 import { ExternalNavContext } from "../hooks/useExternalNav";
 
 export function ExternalNavProvider({
@@ -17,7 +17,12 @@ export function ExternalNavProvider({
   const [open, setOpen] = useState(false);
   const [href, setHref] = useState<string | null>(null);
 
-  function openExternal(url: string) {
+  function openExternal(url: string, skipConfirmation = false, newTab = true) {
+    if (skipConfirmation) {
+      const features = newTab ? "noopener,noreferrer" : "";
+      window.open(url, newTab ? "_blank" : "", features);
+      return;
+    }
     setHref(url);
     setOpen(true);
   }
@@ -29,7 +34,8 @@ export function ExternalNavProvider({
 
   function confirm() {
     if (href) {
-      window.open(href, "_blank", "noopener,noreferrer");
+      const features = "noopener,noreferrer";
+      window.open(href, "_blank", features);
     }
     setOpen(false);
     setHref(null);
@@ -41,7 +47,7 @@ export function ExternalNavProvider({
       {children}
 
       <Dialog open={open} onOpenChange={(v) => (v ? setOpen(true) : cancel())}>
-        <DialogContent className="dark max-w-md overflow-hidden">
+        <DialogContent className="max-w-md overflow-hidden">
           <DialogTitle>Leaving site</DialogTitle>
 
           <DialogDescription>
