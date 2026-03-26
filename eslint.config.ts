@@ -16,21 +16,20 @@ const config: Linter.Config[] = [
   {
     files: ["src/**/*.{ts,tsx}"],
     rules: {
+      // Prevent shadcn primitives being imported via relative paths from
+      // WITHIN the ui/ directory itself. Components in embeddr/ are allowed
+      // to import from ../ui/ since they compose primitives.
       "no-restricted-imports": [
         "error",
         {
           patterns: [
             "./ui",
             "./ui/*",
-            "../ui/*",
-            "../ui",
-            "../../ui/*",
-            "../../ui",
-            "../../../ui/*",
-            "../../../ui",
           ],
         },
       ],
+      // Disable until eslint-plugin-react-hooks v7 compat is resolved
+      "react-hooks/exhaustive-deps": "off",
     },
   },
 ];

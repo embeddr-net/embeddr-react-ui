@@ -29,9 +29,9 @@ describe("LightboxViewer", () => {
     ],
   };
 
-  const defaultProps = {
+  const defaultProps: React.ComponentProps<typeof LightboxViewer> = {
     imageSrc: "img1.jpg",
-    gallery: mockGallery,
+    gallery: mockGallery as any,
     imageIndex: 0,
     onGalleryChange: vi.fn(),
     onImageChange: vi.fn(),

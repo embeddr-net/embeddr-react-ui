@@ -6,7 +6,6 @@ import {
   Eye,
   Image as ImageIcon,
 } from "lucide-react";
-import { resolveApiBaseUrl } from "../../lib/url";
 import {
   ContextMenu,
   ContextMenuContent,
@@ -14,6 +13,7 @@ import {
   ContextMenuSeparator,
   ContextMenuTrigger,
 } from "@embeddr/react-ui/components/ui";
+import { resolveApiBaseUrl } from "../../lib/url";
 import type { EmbeddrAPI } from "../../types";
 
 export type ArtifactContextSource = "core" | "plugin" | "custom";

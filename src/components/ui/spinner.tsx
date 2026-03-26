@@ -1,7 +1,7 @@
-import type { ComponentPropsWithoutRef } from "react";
 import { LoaderCircleIcon } from "lucide-react";
 
 import { cn } from "../../lib/utils";
+import type { ComponentPropsWithoutRef } from "react";
 
 function Spinner({
   className,

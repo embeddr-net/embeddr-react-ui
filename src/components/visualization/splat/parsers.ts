@@ -8,7 +8,7 @@
  * Both produce a common `SplatData` structure consumed by the viewer.
  */
 
-import type { SplatData, SplatBounds, SplatStats } from "./types";
+import type { SplatBounds, SplatData, SplatStats } from "./types";
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -130,7 +130,7 @@ function parsePLY(buffer: ArrayBuffer): { data: SplatData; stats: SplatStats } {
     }
   };
 
-  const offsets: number[] = [];
+  const offsets: Array<number> = [];
   let stride = 0;
   for (const prop of properties) {
     offsets.push(stride);

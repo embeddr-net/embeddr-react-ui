@@ -3,8 +3,8 @@ import { Music } from "lucide-react";
 import { cn } from "../../lib/utils";
 import { EmbeddrDnDTypes } from "../../lib/dnd";
 import { useOptionalEmbeddrAPI } from "../../context/EmbeddrContext";
-import { EmbeddrImage } from "./EmbeddrImage";
 import { resolveApiBaseUrl } from "../../lib/url";
+import { EmbeddrImage } from "./EmbeddrImage";
 import {
   ArtifactContextMenu
   

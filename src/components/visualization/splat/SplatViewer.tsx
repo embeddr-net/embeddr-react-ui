@@ -14,8 +14,8 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import { OrbitControls } from "@react-three/drei";
 import * as THREE from "three";
-import type { SplatData, SplatBounds, SplatViewerConfig } from "./types";
 import { DEFAULT_SPLAT_VIEWER_CONFIG } from "./types";
+import type { SplatBounds, SplatData, SplatViewerConfig } from "./types";
 
 // ── Gaussian Point Cloud ─────────────────────────────────────────────────────
 

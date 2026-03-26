@@ -1,4 +1,4 @@
-import { useEffect, useRef, useCallback } from "react";
+import { useCallback, useEffect, useRef } from "react";
 
 export interface PanelItem {
   id: string;
@@ -17,7 +17,7 @@ export interface PanelLifecycleConfig {
 }
 
 export interface PanelUpdatePayload {
-  items?: PanelItem[];
+  items?: Array<PanelItem>;
   lastActive?: boolean;
   meta?: Record<string, unknown>;
 }

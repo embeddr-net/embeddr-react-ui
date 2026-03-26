@@ -1,5 +1,5 @@
-import { useEmbeddr } from "./useEmbeddr";
 import { resolveApiBaseUrl } from "../lib/url";
+import { useEmbeddr } from "./useEmbeddr";
 
 export interface ArtifactUrls {
   id: string;

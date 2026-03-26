@@ -14,11 +14,11 @@
  *   />
  */
 import {
+  forwardRef,
   useCallback,
   useEffect,
   useMemo,
   useState,
-  forwardRef,
 } from "react";
 import {
   Select,
@@ -75,7 +75,7 @@ export interface ModelPickerProps {
   /** Called when user selects a model */
   onSelect?: (modelId: string, model?: ModelInfo) => void;
   /** Show these options as fallback when no registry models are available */
-  fallbackOptions?: FallbackModelOption[];
+  fallbackOptions?: Array<FallbackModelOption>;
   /** Don't query the registry — only show fallbacks */
   disableQuery?: boolean;
   /** Label displayed above the selector */
@@ -93,11 +93,11 @@ export interface ModelPickerProps {
   /** Provider ID to exclude from the provider badge display */
   ownProvider?: string;
   /** Provider filter — when set, only shows models from matching providers */
-  providerFilter?: string | string[];
+  providerFilter?: string | Array<string>;
   /** If true, fetches on mount; otherwise waits for explicit refresh */
   autoFetch?: boolean;
   /** Called after models are fetched, with the full list */
-  onModelsFetched?: (models: ModelInfo[]) => void;
+  onModelsFetched?: (models: Array<ModelInfo>) => void;
   /** Map of task names to tailwind color classes for the task indicator dot */
   taskColors?: Record<string, string>;
 }
@@ -146,7 +146,7 @@ const ModelPicker = forwardRef<HTMLDivElement, ModelPickerProps>(
     },
     ref,
   ) => {
-    const [models, setModels] = useState<ModelInfo[]>([]);
+    const [models, setModels] = useState<Array<ModelInfo>>([]);
     const [loading, setLoading] = useState(false);
     const [fetched, setFetched] = useState(false);
 
@@ -166,7 +166,7 @@ const ModelPicker = forwardRef<HTMLDivElement, ModelPickerProps>(
           task_filter: taskFilter || undefined,
         });
         if (res?.ok && Array.isArray(res.models)) {
-          let result: ModelInfo[] = res.models;
+          let result: Array<ModelInfo> = res.models;
 
           if (providerFilter) {
             const providers = Array.isArray(providerFilter)
@@ -208,7 +208,7 @@ const ModelPicker = forwardRef<HTMLDivElement, ModelPickerProps>(
         task?: string;
       };
 
-      const items: OptionItem[] = [];
+      const items: Array<OptionItem> = [];
       const seen = new Set<string>();
 
       const sorted = [...models].sort((a, b) => {
