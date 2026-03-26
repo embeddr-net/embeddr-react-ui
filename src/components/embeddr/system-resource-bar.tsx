@@ -11,20 +11,20 @@ import {
 } from "lucide-react";
 import { cn } from "../../lib/utils";
 import { useOptionalEmbeddrAPI } from "../../context/EmbeddrContext";
-import { Progress } from "./progress";
-import { Badge } from "./badge";
+import { Progress } from "../ui/progress";
+import { Badge } from "../ui/badge";
 import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
-} from "./tooltip";
+} from "../ui/tooltip";
 import {
   ContextMenu,
   ContextMenuContent,
   ContextMenuItem,
   ContextMenuTrigger,
-} from "./context-menu";
+} from "../ui/context-menu";
 
 interface ManagedResource {
   id: string;

@@ -12,7 +12,7 @@ import {
   X,
 } from "lucide-react";
 import { cn } from "../../../lib/utils";
-import { Button } from "../button";
+import { Button } from "../../ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -20,7 +20,7 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "../dropdown-menu";
+} from "../../ui/dropdown-menu";
 
 export interface PanelHeaderProps {
   title: string;

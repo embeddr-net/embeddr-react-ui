@@ -12,7 +12,7 @@ import {
   Collapsible,
   CollapsibleContent,
   CollapsibleTrigger,
-} from "./collapsible";
+} from "../ui/collapsible";
 import type { HTMLAttributes, ReactNode } from "react";
 
 const itemVariants = cva(

@@ -2,7 +2,7 @@ import React, { useCallback, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { cn } from "../../lib/utils";
 import { useLocalStorage } from "../../hooks/useLocalStorage";
-import { Card } from "./card";
+import { Card } from "../ui/card";
 import { PanelHeader } from "./panel/PanelHeader";
 import { ResizeHandle } from "./panel/ResizeHandle";
 

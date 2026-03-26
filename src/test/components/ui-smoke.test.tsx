@@ -1,9 +1,9 @@
 import { describe, expect, it } from "vitest";
 import { render, screen } from "@testing-library/react";
 import React from "react";
-import { Button } from "./button";
-import { Card } from "./card";
-import { Input } from "./input";
+import { Button } from "../../components/ui/button";
+import { Card } from "../../components/ui/card";
+import { Input } from "../../components/ui/input";
 
 describe("UI Components Smoke Test", () => {
   it("renders Button correctly", () => {

@@ -1,6 +1,6 @@
 import { ChevronDown, ChevronUp, Info } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
-import { AuthorizedImg } from "@embeddr/react-ui/components/ui";
+import { AuthorizedImg } from "../AuthorizedImg";
 import type { Gallery } from "../../../types/gallery";
 
 interface ImageThumbnailStripProps {

@@ -26,15 +26,15 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "./select";
-import { Badge } from "./badge";
+} from "../ui/select";
+import { Badge } from "../ui/badge";
 import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
-} from "./tooltip";
-import { Spinner } from "./spinner";
+} from "../ui/tooltip";
+import { Spinner } from "../ui/spinner";
 import { cn } from "../../lib/utils";
 
 // ── Types ───────────────────────────────────────────────────
