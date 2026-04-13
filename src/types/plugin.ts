@@ -52,13 +52,13 @@ export interface ArtifactTypeSummary {
   name: string;
   parent_name?: string;
   description?: string;
-  default_capabilities: string[];
+  default_capabilities: Array<string>;
   metadata: Record<string, any>;
   artifact_count: number;
 }
 
 export interface ArtifactTypeSummaryResponse {
-  types: ArtifactTypeSummary[];
+  types: Array<ArtifactTypeSummary>;
   total_artifacts: number;
 }
 
