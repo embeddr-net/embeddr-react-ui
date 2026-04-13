@@ -10,3 +10,4 @@ export * from "./files";
 export * from "./model-picker";
 export * from "./system-resource-bar";
 export * from "./panel";
+export * from "./TypePreviewRenderer";

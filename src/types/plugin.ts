@@ -48,6 +48,20 @@ export interface EmbeddrEventMap {
   [key: string]: any;
 }
 
+export interface ArtifactTypeSummary {
+  name: string;
+  parent_name?: string;
+  description?: string;
+  default_capabilities: string[];
+  metadata: Record<string, any>;
+  artifact_count: number;
+}
+
+export interface ArtifactTypeSummaryResponse {
+  types: ArtifactTypeSummary[];
+  total_artifacts: number;
+}
+
 
 // --- API Interface ---
 /**
@@ -164,7 +178,10 @@ export interface EmbeddrAPI {
      * Get a full URL for a plugin asset or route.
      * @param path - Relative path within the plugin's namespace.
      */
-    getPluginUrl: (path: string) => string;
+      getPluginUrl: (path: string) => string;
+  };
+  types: {
+    summary: () => Promise<ArtifactTypeSummaryResponse>;
   };
   artifacts: {
     list: (input: {

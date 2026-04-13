@@ -150,6 +150,10 @@ export const PannableVideo: React.FC<PannableVideoProps> = ({
     const handlePlay = () => setIsPlaying(true);
     const handlePause = () => setIsPlaying(false);
     const handleEnded = () => {
+      if (video.loop) {
+        setIsPlaying(true);
+        return;
+      }
       setIsPlaying(false);
       if (onEnded) onEnded();
     };
@@ -293,7 +297,7 @@ export const PannableVideo: React.FC<PannableVideoProps> = ({
     <div
       ref={containerRef}
       className={cn(
-        "relative w-full h-full overflow-hidden bg-black/90 flex items-center justify-center select-none group",
+        "relative w-full h-full overflow-hidden bg-background/90 flex items-center justify-center select-none group",
         className,
       )}
       onMouseDown={handleMouseDown}
@@ -322,7 +326,7 @@ export const PannableVideo: React.FC<PannableVideoProps> = ({
           src={currentSrc}
           autoPlay={autoPlay}
           playsInline
-          className="max-w-full max-h-full object-contain"
+          className="max-w-full max-h-full bg-background object-contain"
         />
       </div>
 
@@ -330,7 +334,7 @@ export const PannableVideo: React.FC<PannableVideoProps> = ({
       {controlsMode !== "hidden" && (
         <div
           className={cn(
-            "video-controls rounded-md absolute bottom-2 left-1/2 -translate-x-1/2 w-[90%] max-w-2xl bg-black/60 backdrop-blur-md border border-white/10 p-3 flex flex-col gap-2 transition-all duration-300",
+            "video-controls rounded-md absolute bottom-2 left-1/2 -translate-x-1/2 w-[90%] max-w-2xl bg-background/60 backdrop-blur-md border border-border/30 p-3 flex flex-col gap-2 transition-all duration-300",
             showControls || !isPlaying
               ? "opacity-100 translate-y-0"
               : "opacity-0 translate-y-4 pointer-events-none",
@@ -341,7 +345,7 @@ export const PannableVideo: React.FC<PannableVideoProps> = ({
         >
           {/* Progress Bar */}
           <div className="flex items-center gap-3 w-full">
-            <span className="text-xs font-mono text-white/70 min-w-[40px] text-right">
+            <span className="text-xs font-mono text-foreground/70 min-w-[40px] text-right">
               {formatTime(videoRef.current?.currentTime || 0)}
             </span>
             <Slider
@@ -351,7 +355,7 @@ export const PannableVideo: React.FC<PannableVideoProps> = ({
               onValueChange={handleSeek}
               className="flex-1 cursor-pointer"
             />
-            <span className="text-xs font-mono text-white/70 min-w-[40px]">
+            <span className="text-xs font-mono text-foreground/70 min-w-[40px]">
               {formatTime(duration || 0)}
             </span>
           </div>
@@ -363,7 +367,7 @@ export const PannableVideo: React.FC<PannableVideoProps> = ({
                 variant="ghost"
                 size="icon-sm"
                 onClick={togglePlay}
-                className="hover:bg-white/10 text-white  h-8 w-8"
+                className="hover:bg-foreground/10 text-foreground  h-8 w-8"
               >
                 {isPlaying ? (
                   <Pause className="w-5 h-5 fill-current" />
@@ -377,7 +381,7 @@ export const PannableVideo: React.FC<PannableVideoProps> = ({
                   variant="ghost"
                   size="icon-sm"
                   onClick={toggleMute}
-                  className="hover:bg-white/10 text-white  h-8 w-8"
+                  className="hover:bg-foreground/10 text-foreground  h-8 w-8"
                 >
                   {isMuted || volume === 0 ? (
                     <VolumeX className="w-5 h-5" />
@@ -403,8 +407,8 @@ export const PannableVideo: React.FC<PannableVideoProps> = ({
                 size="icon-sm"
                 onClick={() => setIsLooping(!isLooping)}
                 className={cn(
-                  "hover:bg-white/10  h-8 w-8 transition-colors",
-                  isLooping ? "text-primary" : "text-white/50",
+                  "hover:bg-foreground/10  h-8 w-8 transition-colors",
+                  isLooping ? "text-primary" : "text-foreground/50",
                 )}
                 title="Toggle Loop"
               >
@@ -416,7 +420,7 @@ export const PannableVideo: React.FC<PannableVideoProps> = ({
                 variant="ghost"
                 size="icon-sm"
                 onClick={() => setRotation((r) => r - 90)}
-                className="hover:bg-white/10 text-white  h-8 w-8"
+                className="hover:bg-foreground/10 text-foreground  h-8 w-8"
                 title="Rotate Left"
               >
                 <RotateCcw className="w-4 h-4" />
@@ -425,7 +429,7 @@ export const PannableVideo: React.FC<PannableVideoProps> = ({
                 variant="ghost"
                 size="icon-sm"
                 onClick={() => setRotation((r) => r + 90)}
-                className="hover:bg-white/10 text-white  h-8 w-8"
+                className="hover:bg-foreground/10 text-foreground  h-8 w-8"
                 title="Rotate Right"
               >
                 <RotateCw className="w-4 h-4" />

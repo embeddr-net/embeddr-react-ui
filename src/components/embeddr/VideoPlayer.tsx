@@ -32,6 +32,7 @@ type PersistedMediaVideoState = {
 const GLOBAL_VIDEO_STATE_KEY = "embeddr:video-player:global";
 const CONTROL_HIDE_DELAY_MS = 1600;
 const PLAYBACK_PERSIST_INTERVAL_MS = 2000;
+const BUFFERING_OVERLAY_DELAY_MS = 140;
 
 const clampVolume = (value: number) => {
   if (!Number.isFinite(value)) return 1;
@@ -215,7 +216,9 @@ export const VideoPlayer = React.memo(function VideoPlayer({
   const resumePlaybackRef = useRef<boolean | null>(null);
   const scrubbingRef = useRef(false);
   const controlsHideTimerRef = useRef<number | null>(null);
+  const waitingOverlayTimerRef = useRef<number | null>(null);
   const isPlayingRef = useRef(false);
+  const hasRenderedFrameRef = useRef(false);
 
   const [activeSrc, setActiveSrc] = useState(src);
   const [isPlaying, setIsPlaying] = useState(false);
@@ -380,6 +383,33 @@ export const VideoPlayer = React.memo(function VideoPlayer({
     }
   }, []);
 
+  const clearWaitingOverlayTimer = useCallback(() => {
+    if (waitingOverlayTimerRef.current !== null) {
+      window.clearTimeout(waitingOverlayTimerRef.current);
+      waitingOverlayTimerRef.current = null;
+    }
+  }, []);
+
+  const showBufferingState = useCallback(
+    (immediate = false) => {
+      clearWaitingOverlayTimer();
+      if (immediate || !hasRenderedFrameRef.current) {
+        setIsLoading(true);
+        return;
+      }
+      waitingOverlayTimerRef.current = window.setTimeout(() => {
+        setIsLoading(true);
+        waitingOverlayTimerRef.current = null;
+      }, BUFFERING_OVERLAY_DELAY_MS);
+    },
+    [clearWaitingOverlayTimer],
+  );
+
+  useEffect(() => {
+    clearWaitingOverlayTimer();
+    hasRenderedFrameRef.current = false;
+  }, [activeSrc, clearWaitingOverlayTimer]);
+
   const scheduleControlsHide = useCallback(() => {
     clearControlsHideTimer();
     if (!controls || !isPlayingRef.current || scrubbingRef.current) return;
@@ -457,9 +487,10 @@ export const VideoPlayer = React.memo(function VideoPlayer({
   useEffect(() => {
     return () => {
       clearControlsHideTimer();
+      clearWaitingOverlayTimer();
       persistPlaybackState(true);
     };
-  }, [clearControlsHideTimer, persistPlaybackState]);
+  }, [clearControlsHideTimer, clearWaitingOverlayTimer, persistPlaybackState]);
 
   useEffect(() => {
     const handlePersist = () => {
@@ -610,6 +641,8 @@ export const VideoPlayer = React.memo(function VideoPlayer({
   };
 
   const handleLoadedData = () => {
+    clearWaitingOverlayTimer();
+    hasRenderedFrameRef.current = true;
     setIsLoading(false);
     if (controls) {
       applyPendingResumeTime();
@@ -637,7 +670,7 @@ export const VideoPlayer = React.memo(function VideoPlayer({
     <div
       ref={containerRef}
       className={cn(
-        "group relative bg-card overflow-hidden flex items-center justify-center border-none",
+        "group relative overflow-hidden flex items-center justify-center border-none bg-background",
         className,
       )}
       onPointerEnter={revealControls}
@@ -652,9 +685,9 @@ export const VideoPlayer = React.memo(function VideoPlayer({
         src={activeSrc}
         poster={poster}
         className={cn("block", {
-          "w-full h-full object-cover": objectFit === "cover",
-          "w-full h-full object-fill": objectFit === "fill",
-          "w-full h-full object-contain": objectFit === "contain",
+          "h-full w-full bg-background object-cover": objectFit === "cover",
+          "h-full w-full bg-background object-fill": objectFit === "fill",
+          "h-full w-full bg-background object-contain": objectFit === "contain",
         })}
         loop={loop}
         preload={preload}
@@ -663,10 +696,26 @@ export const VideoPlayer = React.memo(function VideoPlayer({
         onTimeUpdate={controls ? handleTimeUpdate : undefined}
         onDurationChange={controls ? handleDurationChange : undefined}
         onLoadedData={handleLoadedData}
-        onLoadedMetadata={controls ? handleDurationChange : undefined}
-        onWaiting={() => setIsLoading(true)}
-        onPlaying={() => setIsLoading(false)}
+        onLoadedMetadata={() => {
+          if (controls) {
+            handleDurationChange();
+          }
+          clearWaitingOverlayTimer();
+        }}
+        onLoadStart={() => {
+          hasRenderedFrameRef.current = false;
+          showBufferingState(true);
+        }}
+        onWaiting={() => showBufferingState(false)}
+        onStalled={() => showBufferingState(false)}
+        onPlaying={() => {
+          clearWaitingOverlayTimer();
+          hasRenderedFrameRef.current = true;
+          setIsLoading(false);
+        }}
         onPlay={() => {
+          clearWaitingOverlayTimer();
+          hasRenderedFrameRef.current = true;
           setIsPlaying(true);
           isPlayingRef.current = true;
           scheduleControlsHide();
@@ -682,6 +731,14 @@ export const VideoPlayer = React.memo(function VideoPlayer({
           persistPlaybackState(true, false);
         }}
         onEnded={() => {
+          clearWaitingOverlayTimer();
+          if (loop) {
+            setIsLoading(false);
+            setIsPlaying(true);
+            isPlayingRef.current = true;
+            persistPlaybackState(true, true);
+            return;
+          }
           setIsPlaying(false);
           isPlayingRef.current = false;
           if (controls) {
@@ -700,7 +757,7 @@ export const VideoPlayer = React.memo(function VideoPlayer({
 
       {/* Loading Spinner */}
       {isLoading && (
-        <div className="absolute inset-0 flex items-center justify-center bg-black/50 pointer-events-none z-10">
+        <div className="absolute inset-0 flex items-center justify-center bg-background/35 pointer-events-none z-10">
           <Loader2 className="w-8 h-8 animate-spin text-primary/80" />
         </div>
       )}
@@ -708,10 +765,10 @@ export const VideoPlayer = React.memo(function VideoPlayer({
       {/* Big Play Button Overlay (only when paused and not loading) */}
       {!isPlaying && !isLoading && (
         <div
-          className="absolute inset-0 flex items-center justify-center bg-card/10 cursor-pointer z-10 group/overlay"
+          className="absolute inset-0 flex items-center justify-center bg-background/10 cursor-pointer z-10 group/overlay"
           onClick={togglePlay}
         >
-          <div className="w-14 h-10  bg-card/60 border border-white/10 backdrop-blur-md flex items-center justify-center group-hover/overlay:bg-black/80 group-hover/overlay:scale-110 transition-all duration-300 shadow-xl rounded-md">
+          <div className="w-14 h-10  bg-card/60 border border-border/30 backdrop-blur-md flex items-center justify-center group-hover/overlay:bg-card/80 group-hover/overlay:scale-110 transition-all duration-300 shadow-xl rounded-md">
             <Play className="w-5 h-5 text-foreground fill-primary ml-0.5" />
           </div>
         </div>

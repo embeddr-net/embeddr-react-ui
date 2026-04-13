@@ -45,6 +45,9 @@ export interface PromptImage {
   sha256?: string | null;
   is_archived?: boolean;
   updated_at?: string;
+  type_name?: string;
+  storage_backend?: string;
+  blob_size?: number;
 }
 
 export interface PipelineSpec {

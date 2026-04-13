@@ -17,7 +17,6 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "../../ui/dropdown-menu";
@@ -134,9 +133,6 @@ export function PanelHeader({
             align="end"
             className="embeddr-panel-menu z-1000000"
           >
-            <DropdownMenuLabel>Panel Settings</DropdownMenuLabel>
-            <DropdownMenuSeparator />
-
             {additionalSettingsItems && (
               <>
                 {additionalSettingsItems}

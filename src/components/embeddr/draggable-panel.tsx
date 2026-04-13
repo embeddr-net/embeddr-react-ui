@@ -62,6 +62,10 @@ export interface DraggablePanelProps {
   onMouseLeave?: (e: React.MouseEvent) => void;
   showTitle?: boolean;
   onShowTitleChange?: (show: boolean) => void;
+  titlePosition?: "top" | "bottom";
+  onTitlePositionChange?: (position: "top" | "bottom") => void;
+  isFolded?: boolean;
+  onFoldChange?: (folded: boolean) => void;
   openRevision?: number;
   resetUiOnOpen?: boolean;
   hideHeader?: boolean;
@@ -136,6 +140,10 @@ export function DraggablePanel({
   onMinimize,
   showTitle: controlledShowTitle,
   onShowTitleChange,
+  titlePosition: controlledTitlePosition,
+  onTitlePositionChange,
+  isFolded: controlledIsFolded,
+  onFoldChange,
   openRevision,
   resetUiOnOpen = false,
   hideHeader = false,
@@ -177,16 +185,18 @@ export function DraggablePanel({
 
   const onPositionChange = useCallback(
     (pos: { x: number; y: number }) => {
+      if ((window as any).__PANEL_DEBUG) console.log(`[panel:${id}] onPositionChange`, pos, isResizingRef.current ? `(resize:${resizeEdgeRef.current})` : isDraggingRef.current ? '(drag)' : '(external)');
       if (controlledOnPositionChange) {
         controlledOnPositionChange(pos);
       } else {
         setInternalPosition(pos);
       }
     },
-    [controlledOnPositionChange, setInternalPosition],
+    [controlledOnPositionChange, setInternalPosition, id],
   );
 
   const onSizeChange = (s: { width: number; height: number }) => {
+    if ((window as any).__PANEL_DEBUG) console.log(`[panel:${id}] onSizeChange`, s, isResizingRef.current ? `(resize:${resizeEdgeRef.current})` : '(external)');
     if (controlledOnSizeChange) {
       controlledOnSizeChange(s);
     } else {
@@ -196,11 +206,13 @@ export function DraggablePanel({
 
   const [isDragging, setIsDragging] = useState(false);
   const [isResizing, setIsResizing] = useState(false);
-  const [isFolded, setIsFolded] = useLocalStorage(
+  const [internalIsFolded, setInternalIsFolded] = useLocalStorage(
     id ? `panel-${id}-folded` : "temp-panel-folded",
     false,
   );
-  const [titlePosition, setTitlePosition] = useLocalStorage<"top" | "bottom">(
+  const [internalTitlePosition, setInternalTitlePosition] = useLocalStorage<
+    "top" | "bottom"
+  >(
     id ? `panel-${id}-title-position` : "temp-panel-title-position",
     "top",
   );
@@ -208,6 +220,8 @@ export function DraggablePanel({
     id ? `panel-${id}-show-title` : "temp-panel-show-title",
     true,
   );
+  const isFolded = controlledIsFolded ?? internalIsFolded;
+  const titlePosition = controlledTitlePosition ?? internalTitlePosition;
 
   const showTitle = hideHeader
     ? false
@@ -224,10 +238,29 @@ export function DraggablePanel({
     [onShowTitleChange, setInternalShowTitle],
   );
 
+  const setFolded = useCallback(
+    (folded: boolean) => {
+      setInternalIsFolded(folded);
+      onFoldChange?.(folded);
+    },
+    [onFoldChange, setInternalIsFolded],
+  );
+
+  const setTitlePosition = useCallback(
+    (position: "top" | "bottom") => {
+      setInternalTitlePosition(position);
+      onTitlePositionChange?.(position);
+    },
+    [onTitlePositionChange, setInternalTitlePosition],
+  );
+
+  type ResizeEdge = "n" | "s" | "e" | "w" | "ne" | "nw" | "se" | "sw";
+
   const panelRef = useRef<HTMLDivElement>(null);
   const dragStartRef = useRef({ x: 0, y: 0 });
   const initialPosRef = useRef({ x: 0, y: 0 });
   const initialSizeRef = useRef({ width: 0, height: 0 });
+  const resizeEdgeRef = useRef<ResizeEdge>("se");
   const pendingPointerRef = useRef<{ x: number; y: number } | null>(null);
   const frameRef = useRef<number | null>(null);
   const pendingStartCleanupRef = useRef<(() => void) | null>(null);
@@ -269,6 +302,37 @@ export function DraggablePanel({
   useEffect(() => {
     titlePositionRef.current = titlePosition;
   }, [titlePosition]);
+
+  useEffect(() => {
+    if (
+      controlledShowTitle !== undefined &&
+      internalShowTitle !== controlledShowTitle
+    ) {
+      setInternalShowTitle(controlledShowTitle);
+    }
+  }, [controlledShowTitle, internalShowTitle, setInternalShowTitle]);
+
+  useEffect(() => {
+    if (
+      controlledIsFolded !== undefined &&
+      internalIsFolded !== controlledIsFolded
+    ) {
+      setInternalIsFolded(controlledIsFolded);
+    }
+  }, [controlledIsFolded, internalIsFolded, setInternalIsFolded]);
+
+  useEffect(() => {
+    if (
+      controlledTitlePosition !== undefined &&
+      internalTitlePosition !== controlledTitlePosition
+    ) {
+      setInternalTitlePosition(controlledTitlePosition);
+    }
+  }, [
+    controlledTitlePosition,
+    internalTitlePosition,
+    setInternalTitlePosition,
+  ]);
 
   const emitPanelDebug = useCallback(
     (phase: PanelDebugPhase, extra?: Record<string, unknown>) => {
@@ -322,11 +386,11 @@ export function DraggablePanel({
     }
 
     lastHandledOpenRevisionRef.current = openRevision;
-    setIsFolded(false);
+    setFolded(false);
     if (!hideHeader) {
       setShowTitle(true);
     }
-  }, [hideHeader, openRevision, resetUiOnOpen, setIsFolded, setShowTitle]);
+  }, [hideHeader, openRevision, resetUiOnOpen, setFolded, setShowTitle]);
 
   useEffect(() => {
     emitPanelDebug(isOpen ? "panel-open" : "panel-close", {
@@ -366,13 +430,14 @@ export function DraggablePanel({
       Math.abs(prev.offsetX - newOffsetX) > 2 ||
       Math.abs(prev.offsetY - newOffsetY) > 2
     ) {
+      if ((window as any).__PANEL_DEBUG) console.log(`[panel:${id}] anchor-sync`, { anchorX, anchorY, oldOffsetX: prev.offsetX, newOffsetX, oldOffsetY: prev.offsetY, newOffsetY, pos: { x, y }, interacting: isInteractingRef.current });
       setAnchorState((p) => ({
         ...p,
         offsetX: newOffsetX,
         offsetY: newOffsetY,
       }));
     }
-  }, [isPositionControlled, position, size.width, size.height, setAnchorState]);
+  }, [isPositionControlled, position, size.width, size.height, setAnchorState, id]);
 
   // Handle Window Resize - Anchor Logic
   useEffect(() => {
@@ -607,23 +672,39 @@ export function DraggablePanel({
   );
 
   const beginResize = useCallback(
-    (clientX: number, clientY: number) => {
+    (clientX: number, clientY: number, edge: ResizeEdge = "se") => {
       onFocus?.();
       if (pinned) return;
       emitPanelDebug("resize-start", {
         start: { x: clientX, y: clientY },
+        edge,
       });
+      resizeEdgeRef.current = edge;
       setIsResizing(true);
       isInteractingRef.current = true;
       dragStartRef.current = { x: clientX, y: clientY };
       initialSizeRef.current = { ...sizeRef.current };
+      initialPosRef.current = { ...positionRef.current };
     },
     [emitPanelDebug, pinned, onFocus],
   );
 
+  const makeResizeHandler = (edge: ResizeEdge) => ({
+    onMouseDown: (e: React.MouseEvent) => {
+      e.stopPropagation();
+      beginResize(e.clientX, e.clientY, edge);
+    },
+    onTouchStart: (e: React.TouchEvent) => {
+      e.stopPropagation();
+      const t = e.touches[0];
+      if (!t) return;
+      beginResize(t.clientX, t.clientY, edge);
+    },
+  });
+
   const handleResizeStart = (e: React.MouseEvent) => {
     e.stopPropagation();
-    beginResize(e.clientX, e.clientY);
+    beginResize(e.clientX, e.clientY, "se");
   };
 
   const handleResizeTouchStart = useCallback(
@@ -631,12 +712,13 @@ export function DraggablePanel({
       e.stopPropagation();
       const t = e.touches[0];
       if (!t) return;
-      beginResize(t.clientX, t.clientY);
+      beginResize(t.clientX, t.clientY, "se");
     },
     [beginResize],
   );
 
   const handleInteractionEnd = useCallback(() => {
+    if ((window as any).__PANEL_DEBUG) console.log(`[panel:${id}] handleInteractionEnd`, { pos: positionRef.current, size: sizeRef.current, wasResizing: isResizingRef.current, edge: resizeEdgeRef.current });
     const { innerWidth, innerHeight } = window;
     const { x, y } = positionRef.current;
 
@@ -786,7 +868,7 @@ export function DraggablePanel({
         previous,
         next,
       });
-      setIsFolded(next);
+      setFolded(next);
     },
     [
       clearPendingStartListeners,
@@ -794,7 +876,7 @@ export function DraggablePanel({
       forceCancelInteraction,
       isDragging,
       isResizing,
-      setIsFolded,
+      setFolded,
     ],
   );
 
@@ -811,10 +893,33 @@ export function DraggablePanel({
       } else if (isResizing) {
         const dx = clientX - dragStartRef.current.x;
         const dy = clientY - dragStartRef.current.y;
-        onSizeChange({
-          width: Math.max(minWidth, initialSizeRef.current.width + dx),
-          height: Math.max(minHeight, initialSizeRef.current.height + dy),
-        });
+        const edge = resizeEdgeRef.current;
+        const iw = initialSizeRef.current.width;
+        const ih = initialSizeRef.current.height;
+        const ix = initialPosRef.current.x;
+        const iy = initialPosRef.current.y;
+
+        let newW = iw, newH = ih, newX = ix, newY = iy;
+
+        if (edge.includes("e")) newW = iw + dx;
+        if (edge.includes("w")) { newW = iw - dx; newX = ix + dx; }
+        if (edge.includes("s")) newH = ih + dy;
+        if (edge.includes("n")) { newH = ih - dy; newY = iy + dy; }
+
+        // Clamp to minimums — pin position when hitting min
+        if (newW < minWidth) {
+          if (edge.includes("w")) newX = ix + (iw - minWidth);
+          newW = minWidth;
+        }
+        if (newH < minHeight) {
+          if (edge.includes("n")) newY = iy + (ih - minHeight);
+          newH = minHeight;
+        }
+
+        onSizeChange({ width: newW, height: newH });
+        if (edge.includes("w") || edge.includes("n")) {
+          onPositionChange({ x: newX, y: newY });
+        }
       }
     };
 
@@ -861,7 +966,9 @@ export function DraggablePanel({
           size: sizeRef.current,
         });
         onResizeEnd?.();
-        handleInteractionEnd();
+        // Don't run handleInteractionEnd for resize — it recalculates
+        // anchor offsets which causes a position jump. Just clear the flag.
+        isInteractingRef.current = false;
       }
       setIsDragging(false);
       setIsResizing(false);
@@ -934,6 +1041,19 @@ export function DraggablePanel({
   // If title is bottom AND we are NOT folded (so content is visible),
   // we shift the DIV up so the header lands at `position.y`.
   // We add +2 to account for the top and bottom borders of the container (1px each).
+  // Debug: detect position jumps
+  const prevRenderPosRef = useRef(position);
+  if ((window as any).__PANEL_DEBUG) {
+    const prev = prevRenderPosRef.current;
+    const dx = Math.abs(prev.x - position.x);
+    const dy = Math.abs(prev.y - position.y);
+    if (dx > 5 || dy > 5) {
+      console.warn(`[panel:${id}] POSITION JUMP`, { from: prev, to: position, dx, dy, isDragging, isResizing, controlled: !!controlledPosition });
+      console.trace();
+    }
+    prevRenderPosRef.current = position;
+  }
+
   const visualY =
     !isFolded && titlePosition === "bottom"
       ? position.y - (size.height - headerHeight) + 2
@@ -1018,7 +1138,7 @@ export function DraggablePanel({
       data-panel-active={isActive ? "true" : "false"}
       data-panel-interacting={isDragging || isResizing ? "true" : "false"}
       className={cn(
-        "embeddr-panel-shell select-none fixed flex shadow-xl border bg-background/95  supports-backdrop-filter:bg-background/60 transition-colors duration-200 rounded-lg overflow-hidden",
+        "embeddr-panel-shell select-none fixed flex shadow-lg border border-border/50 bg-background/95  supports-backdrop-filter:bg-background/60 transition-colors duration-200 rounded-lg overflow-hidden",
         "focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:border focus-visible:border-primary/30",
         isActive ? "embeddr-panel-active" : "embeddr-panel-inactive",
         (isDragging || isResizing) && "embeddr-panel-interacting",
@@ -1126,13 +1246,114 @@ export function DraggablePanel({
         </div>
       )}
 
-      {/* Resize Handle */}
+      {/* Resize Zones — hit areas on edges/corners with visual indicators on hover */}
       {!isFolded && (
-        <ResizeHandle
-          transparent={transparent}
-          onMouseDown={handleResizeStart}
-          onTouchStart={handleResizeTouchStart}
-        />
+        <>
+          {/* Corner zones */}
+          {(["nw", "ne", "sw", "se"] as const).map((corner) => {
+            const pos: React.CSSProperties = {
+              position: "absolute",
+              width: 14,
+              height: 14,
+              zIndex: 100,
+              touchAction: "none",
+              cursor: `${corner}-resize`,
+            };
+            if (corner.includes("n")) pos.top = -2;
+            if (corner.includes("s")) pos.bottom = -2;
+            if (corner.includes("w")) pos.left = -2;
+            if (corner.includes("e")) pos.right = -2;
+            return (
+              <div
+                key={corner}
+                style={pos}
+                {...makeResizeHandler(corner)}
+                onMouseEnter={(e) => {
+                  const dot = e.currentTarget.firstElementChild as HTMLElement;
+                  if (dot) dot.style.opacity = "0.5";
+                }}
+                onMouseLeave={(e) => {
+                  const dot = e.currentTarget.firstElementChild as HTMLElement;
+                  if (dot) dot.style.opacity = "0";
+                }}
+              >
+                <div style={{
+                  position: "absolute",
+                  top: "50%",
+                  left: "50%",
+                  transform: "translate(-50%, -50%)",
+                  width: 5,
+                  height: 5,
+                  borderRadius: "50%",
+                  background: "currentColor",
+                  opacity: 0,
+                  transition: "opacity 0.15s",
+                  pointerEvents: "none",
+                }} />
+              </div>
+            );
+          })}
+          {/* Edge center zones */}
+          {(["n", "s", "e", "w"] as const).map((edge) => {
+            const isH = edge === "n" || edge === "s";
+            const pos: React.CSSProperties = {
+              position: "absolute",
+              zIndex: 100,
+              touchAction: "none",
+              cursor: `${edge}-resize`,
+            };
+            if (isH) {
+              pos.left = "50%";
+              pos.width = 48;
+              pos.marginLeft = -24;
+              pos.height = 10;
+              if (edge === "n") pos.top = -2;
+              else pos.bottom = -2;
+            } else {
+              pos.top = "50%";
+              pos.height = 48;
+              pos.marginTop = -24;
+              pos.width = 10;
+              if (edge === "w") pos.left = -2;
+              else pos.right = -2;
+            }
+            return (
+              <div
+                key={edge}
+                style={pos}
+                {...makeResizeHandler(edge)}
+                onMouseEnter={(e) => {
+                  const line = e.currentTarget.firstElementChild as HTMLElement;
+                  if (line) line.style.opacity = "0.4";
+                }}
+                onMouseLeave={(e) => {
+                  const line = e.currentTarget.firstElementChild as HTMLElement;
+                  if (line) line.style.opacity = "0";
+                }}
+              >
+                <div style={{
+                  position: "absolute",
+                  top: "50%",
+                  left: "50%",
+                  transform: "translate(-50%, -50%)",
+                  width: isH ? 22 : 3,
+                  height: isH ? 3 : 22,
+                  borderRadius: 2,
+                  background: "currentColor",
+                  opacity: 0,
+                  transition: "opacity 0.15s",
+                  pointerEvents: "none",
+                }} />
+              </div>
+            );
+          })}
+          {/* Visual SE indicator */}
+          <ResizeHandle
+            transparent={transparent}
+            onMouseDown={handleResizeStart}
+            onTouchStart={handleResizeTouchStart}
+          />
+        </>
       )}
 
       {/* Global Interaction Shield */}

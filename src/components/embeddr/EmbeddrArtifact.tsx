@@ -3,8 +3,8 @@ import { Music } from "lucide-react";
 import { cn } from "../../lib/utils";
 import { EmbeddrDnDTypes } from "../../lib/dnd";
 import { useOptionalEmbeddrAPI } from "../../context/EmbeddrContext";
-import { resolveApiBaseUrl } from "../../lib/url";
 import { EmbeddrImage } from "./EmbeddrImage";
+import { resolveApiBaseUrl } from "../../lib/url";
 import {
   ArtifactContextMenu
   
@@ -13,11 +13,13 @@ import {
 import type {ArtifactContextMenuAction, ArtifactContextMenuContext} from "./ArtifactContextMenu";
 
 export interface EmbeddrArtifactProps extends React.ImgHTMLAttributes<HTMLImageElement> {
+  api?: any;
   id?: string;
   url?: string;
   backendUrl?: string;
   artifactType?: string;
   artifactPath?: string;
+  artifactPayload?: Record<string, any>;
   variant?: "preview" | "content";
   resolver?: (input: {
     artifactId?: string;
@@ -84,11 +86,13 @@ export const EmbeddrArtifact = React.forwardRef<
 >(
   (
     {
+      api: apiProp,
       id,
       url,
       backendUrl,
       artifactType = "image",
       artifactPath = "",
+      artifactPayload: artifactPayloadProp,
       variant = "preview",
       resolver,
       contextMenuDisabled,
@@ -101,7 +105,8 @@ export const EmbeddrArtifact = React.forwardRef<
     },
     ref,
   ) => {
-    const api = useOptionalEmbeddrAPI();
+    const apiCtx = useOptionalEmbeddrAPI();
+    const api = apiProp || apiCtx;
     const [resolved, setResolved] = React.useState<{
       id?: string;
       type?: string;
@@ -265,7 +270,7 @@ export const EmbeddrArtifact = React.forwardRef<
             src: signedAudioSrc,
             contentUrl: resolved?.content_url,
             previewUrl: resolved?.preview_url,
-            artifactPayload: resolved?.payload,
+            artifactPayload: { ...artifactPayloadProp, ...resolved?.payload },
           }}
           mode={contextMenuMode}
           actions={contextMenuActions}
@@ -279,6 +284,7 @@ export const EmbeddrArtifact = React.forwardRef<
     return (
       <EmbeddrImage
         ref={ref}
+        api={api}
         id={resolved?.id ?? id}
         src={src}
         backendUrl={backendUrl || api?.utils.backendUrl}
@@ -286,7 +292,7 @@ export const EmbeddrArtifact = React.forwardRef<
         artifactPath={artifactPath}
         contentUrl={resolved?.content_url}
         previewUrl={resolved?.preview_url}
-        artifactPayload={resolved?.payload}
+        artifactPayload={{ ...artifactPayloadProp, ...resolved?.payload }}
         contextMenuDisabled={contextMenuDisabled}
         contextMenuMode={contextMenuMode}
         contextMenuActions={contextMenuActions}

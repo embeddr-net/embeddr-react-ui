@@ -12,8 +12,15 @@ export const ExternalNavContext = createContext<
   ExternalNavContextType | undefined
 >(undefined);
 
+const defaultNav: ExternalNavContextType = {
+  openExternal: (url, _skipConfirmation, newTab = true) => {
+    if (typeof window !== "undefined") {
+      window.open(url, newTab ? "_blank" : "_self");
+    }
+  },
+};
+
 export function useExternalNav() {
   const ctx = useContext(ExternalNavContext);
-  if (!ctx) throw new Error("useExternalNav must be used within provider");
-  return ctx;
+  return ctx ?? defaultNav;
 }

@@ -301,8 +301,8 @@ export const LightboxViewer = ({
       {/* Main Image - Pannable Canvas */}
       <div className="flex-1 flex items-center justify-center relative w-full h-full min-h-0">
         {isLoading && (
-          <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/20 backdrop-blur-[1px]">
-            <Loader2 className="w-10 h-10 text-white animate-spin" />
+          <div className="absolute inset-0 z-50 flex items-center justify-center bg-background/40 backdrop-blur-[1px]">
+            <Loader2 className="w-10 h-10 text-foreground animate-spin" />
           </div>
         )}
         {imageSrc &&

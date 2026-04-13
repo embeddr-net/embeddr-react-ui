@@ -97,7 +97,7 @@ export function ComparisonSlider({
   return (
     <div
       ref={containerRef}
-      className={`relative w-full h-full select-none overflow-hidden bg-black/5 touch-none cursor-ew-resize ${
+      className={`relative w-full h-full select-none overflow-hidden bg-muted/30 touch-none cursor-ew-resize ${
         className || ""
       }`}
       onMouseDown={onMouseDown}

@@ -11,6 +11,7 @@ import {
 import type {ArtifactContextMenuAction, ArtifactContextMenuContext} from "./ArtifactContextMenu";
 
 export interface EmbeddrImageProps extends React.ImgHTMLAttributes<HTMLImageElement> {
+  api?: any; // Optional API object (takes precedence over context)
   id?: string; // The Artifact ID (optional for external resources)
   backendUrl?: string; // Base URL of the backend (e.g. http://localhost:8080)
   artifactType?: string; // defaults to 'image'
@@ -33,6 +34,7 @@ export const EmbeddrImage = React.forwardRef<
 >(
   (
     {
+      api: apiProp,
       id,
       src,
       backendUrl = "",
@@ -51,7 +53,8 @@ export const EmbeddrImage = React.forwardRef<
     },
     ref,
   ) => {
-    const api = useOptionalEmbeddrAPI();
+    const apiCtx = useOptionalEmbeddrAPI();
+    const api = apiProp || apiCtx;
     const apiBackendUrl = api?.utils.backendUrl ?? "";
     const effectiveBackendUrl = backendUrl || apiBackendUrl;
 

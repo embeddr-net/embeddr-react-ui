@@ -6,6 +6,7 @@ import {
   Eye,
   Image as ImageIcon,
 } from "lucide-react";
+import { resolveApiBaseUrl } from "../../lib/url";
 import {
   ContextMenu,
   ContextMenuContent,
@@ -13,7 +14,6 @@ import {
   ContextMenuSeparator,
   ContextMenuTrigger,
 } from "@embeddr/react-ui/components/ui";
-import { resolveApiBaseUrl } from "../../lib/url";
 import type { EmbeddrAPI } from "../../types";
 
 export type ArtifactContextSource = "core" | "plugin" | "custom";
@@ -304,13 +304,30 @@ function buildDefaultActions(
       icon: ExternalLink,
       source: "core",
       disabled: !hasArtifactId,
-      onSelect: ({ api: actionApi, artifactId: actionArtifactId }) => {
+      onSelect: ({ api: actionApi, artifactId: actionArtifactId, contentUrl: actionContentUrl, previewUrl: actionPreviewUrl, artifactType: actionArtifactType }) => {
         if (!actionApi || !actionArtifactId) return;
-        actionApi.events.emit("ui:display_media" as any, {
-          artifact_ids: [actionArtifactId],
-          windowStrategy: "spawn",
-          panelId: `core-media-frame-${actionArtifactId}-${Date.now().toString(36)}`,
-        });
+        // Spawn MediaFrame directly via windows API (bypasses event bridge)
+        if (actionApi.windows?.spawn) {
+          actionApi.windows.spawn(
+            "embeddr-core-media-frame",
+            "Media Frame",
+            {
+              initialItems: [{
+                artifactId: actionArtifactId,
+                id: actionArtifactId,
+                type: actionArtifactType || "image",
+              }],
+              initialMode: "replace",
+              initialSelectIndex: 0,
+            },
+          );
+        } else {
+          // Fallback to event emission
+          actionApi.events?.emit?.("ui:display_media" as any, {
+            artifact_ids: [actionArtifactId],
+            windowStrategy: "spawn",
+          });
+        }
       },
     },
     {
@@ -444,6 +461,16 @@ function orderActions(
   });
 }
 
+// Type action registry — shared via globalThis across UMD boundaries
+function getTypeActions(typeName: string): any[] {
+  const reg = (globalThis as any).__embeddrTypeActions || [];
+  return reg.filter((a: any) => {
+    if (a.type === typeName) return true;
+    if (a.type?.endsWith?.(":*")) return typeName.startsWith(a.type.slice(0, -1));
+    return false;
+  });
+}
+
 function resolveMenuActions({
   context,
   mode = "merge",
@@ -463,7 +490,27 @@ function resolveMenuActions({
       ? defaults
       : [...defaults, ...buildPluginActions(context)];
 
-  const merged = [...withPlugins, ...(actions || [])];
+  // Auto-merge type-specific actions from globalThis registry
+  // Prefer type_name from payload (real ontology type like "stash:scene")
+  // over artifactType (media type like "video")
+  const artifactType = context.artifactPayload?.type_name || context.artifactType || "";
+  const typeActions = artifactType ? getTypeActions(artifactType) : [];
+  const replacedIds = new Set(typeActions.filter((ta: any) => ta.replaces).map((ta: any) => ta.replaces));
+  const withoutReplaced = withPlugins.filter((a) => !replacedIds.has(a.id));
+  const typeActionEntries = typeActions.map((ta: any) => ({
+    id: ta.id,
+    label: ta.label,
+    icon: ta.icon,
+    source: "plugin" as const,
+    order: ta.order,
+    separatorBefore: ta.separatorBefore,
+    hidden: ta.hidden ?? false,
+    disabled: ta.disabled ?? false,
+    onSelect: (ctx: ArtifactContextMenuContext) =>
+      ta.onSelect({ api: ctx.api, artifact: ctx.artifactPayload, artifactId: ctx.artifactId }),
+  }));
+
+  const merged = [...withoutReplaced, ...typeActionEntries, ...(actions || [])];
   const resolved = resolveActions
     ? resolveActions({ defaults: merged, context })
     : merged;
