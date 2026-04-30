@@ -8,15 +8,9 @@ import { useLocalStorage } from "./useLocalStorage";
  * @param key The local key for the state (e.g. 'position', 'items')
  * @param initialValue Default value
  */
-export function usePluginStorage<T>(
-  pluginId: string,
-  key: string,
-  initialValue: T,
-) {
+export function usePluginStorage<T>(pluginId: string, key: string, initialValue: T) {
   if (!pluginId) {
-    console.warn(
-      "usePluginStorage called without pluginId, falling back to global key",
-    );
+    console.warn("usePluginStorage called without pluginId, falling back to global key");
   }
   const scopedKey = pluginId ? `plugin-storage:${pluginId}:${key}` : key;
   return useLocalStorage<T>(scopedKey, initialValue);

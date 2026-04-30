@@ -12,10 +12,7 @@ import type { SplatBounds, SplatData, SplatStats } from "./types";
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
-export function computeBounds(
-  positions: Float32Array,
-  count: number,
-): SplatBounds {
+export function computeBounds(positions: Float32Array, count: number): SplatBounds {
   const min: [number, number, number] = [Infinity, Infinity, Infinity];
   const max: [number, number, number] = [-Infinity, -Infinity, -Infinity];
 
@@ -73,9 +70,7 @@ function computeStats(
 function parsePLY(buffer: ArrayBuffer): { data: SplatData; stats: SplatStats } {
   const bytes = new Uint8Array(buffer);
   const decoder = new TextDecoder();
-  const headerStr = decoder.decode(
-    bytes.subarray(0, Math.min(bytes.length, 8192)),
-  );
+  const headerStr = decoder.decode(bytes.subarray(0, Math.min(bytes.length, 8192)));
   const endHeaderIdx = headerStr.indexOf("end_header\n");
   if (endHeaderIdx === -1) throw new Error("Invalid PLY: no end_header found");
   const headerEnd = endHeaderIdx + "end_header\n".length;
@@ -144,25 +139,17 @@ function parsePLY(buffer: ArrayBuffer): { data: SplatData; stats: SplatStats } {
   const rotations = new Float32Array(vertexCount * 4);
 
   const hasXYZ = propMap.has("x") && propMap.has("y") && propMap.has("z");
-  const hasDC =
-    propMap.has("f_dc_0") && propMap.has("f_dc_1") && propMap.has("f_dc_2");
-  const hasRGB =
-    propMap.has("red") && propMap.has("green") && propMap.has("blue");
+  const hasDC = propMap.has("f_dc_0") && propMap.has("f_dc_1") && propMap.has("f_dc_2");
+  const hasRGB = propMap.has("red") && propMap.has("green") && propMap.has("blue");
   const hasOpacity = propMap.has("opacity");
-  const hasScale =
-    propMap.has("scale_0") && propMap.has("scale_1") && propMap.has("scale_2");
+  const hasScale = propMap.has("scale_0") && propMap.has("scale_1") && propMap.has("scale_2");
   const hasRot =
-    propMap.has("rot_0") &&
-    propMap.has("rot_1") &&
-    propMap.has("rot_2") &&
-    propMap.has("rot_3");
+    propMap.has("rot_0") && propMap.has("rot_1") && propMap.has("rot_2") && propMap.has("rot_3");
 
   let shRestCount = 0;
   while (propMap.has(`f_rest_${shRestCount}`)) shRestCount++;
-  const shDegree =
-    shRestCount > 0 ? (shRestCount >= 45 ? 3 : shRestCount >= 15 ? 2 : 1) : 0;
-  const shData =
-    shRestCount > 0 ? new Float32Array(vertexCount * shRestCount) : undefined;
+  const shDegree = shRestCount > 0 ? (shRestCount >= 45 ? 3 : shRestCount >= 15 ? 2 : 1) : 0;
+  const shData = shRestCount > 0 ? new Float32Array(vertexCount * shRestCount) : undefined;
 
   const readFloat = (vertexIdx: number, propIdx: number): number => {
     const byteOffset = vertexIdx * stride + offsets[propIdx]!;
@@ -208,10 +195,7 @@ function parsePLY(buffer: ArrayBuffer): { data: SplatData; stats: SplatStats } {
 
     if (hasDC) {
       const SH_C0 = 0.28209479177387814;
-      colors[i * 4] = Math.max(
-        0,
-        Math.min(1, 0.5 + SH_C0 * readFloat(i, propMap.get("f_dc_0")!)),
-      );
+      colors[i * 4] = Math.max(0, Math.min(1, 0.5 + SH_C0 * readFloat(i, propMap.get("f_dc_0")!)));
       colors[i * 4 + 1] = Math.max(
         0,
         Math.min(1, 0.5 + SH_C0 * readFloat(i, propMap.get("f_dc_1")!)),
@@ -227,9 +211,7 @@ function parsePLY(buffer: ArrayBuffer): { data: SplatData; stats: SplatStats } {
       const rVal = readFloat(i, rIdx);
       const gVal = readFloat(i, gIdx);
       const bVal = readFloat(i, bIdx);
-      const isUchar =
-        properties[rIdx]!.type === "uchar" ||
-        properties[rIdx]!.type === "uint8";
+      const isUchar = properties[rIdx]!.type === "uchar" || properties[rIdx]!.type === "uint8";
       const div = isUchar ? 255 : 1;
       colors[i * 4] = rVal / div;
       colors[i * 4 + 1] = gVal / div;
@@ -240,9 +222,7 @@ function parsePLY(buffer: ArrayBuffer): { data: SplatData; stats: SplatStats } {
       colors[i * 4 + 2] = 1;
     }
 
-    colors[i * 4 + 3] = hasOpacity
-      ? sigmoid(readFloat(i, propMap.get("opacity")!))
-      : 1.0;
+    colors[i * 4 + 3] = hasOpacity ? sigmoid(readFloat(i, propMap.get("opacity")!)) : 1.0;
 
     if (hasScale) {
       scales[i * 3] = Math.exp(readFloat(i, propMap.get("scale_0")!));

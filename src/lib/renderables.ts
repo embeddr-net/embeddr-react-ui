@@ -131,10 +131,7 @@ export const listRenderableCatalog = (): Array<RenderableCatalogEntry> => {
   return out;
 };
 
-export const syncRenderablesFromLotus = async (
-  api: any,
-  options?: { limit?: number },
-) => {
+export const syncRenderablesFromLotus = async (api: any, options?: { limit?: number }) => {
   if (!api?.lotus?.list) return [] as Array<RenderableMeta>;
   const limit = options?.limit ?? 500;
   const res = await api.lotus.list({ limit });
@@ -163,10 +160,6 @@ export const resolveRenderable = (
   context?: RenderableContext,
 ): RenderableDescriptor | undefined => {
   if (!item) return undefined;
-  const sorted = [...registry].sort(
-    (a, b) => (b.priority ?? 0) - (a.priority ?? 0),
-  );
-  return sorted.find((descriptor) =>
-    matchesRenderable(descriptor, item, context),
-  );
+  const sorted = [...registry].sort((a, b) => (b.priority ?? 0) - (a.priority ?? 0));
+  return sorted.find((descriptor) => matchesRenderable(descriptor, item, context));
 };

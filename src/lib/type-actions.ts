@@ -20,15 +20,11 @@ export interface TypeAction {
   icon?: any;
   order?: number;
   separatorBefore?: boolean;
-  onSelect: (context: {
-    api: any;
-    artifact: any;
-    artifactId?: string;
-  }) => void | Promise<void>;
+  onSelect: (context: { api: any; artifact: any; artifactId?: string }) => void | Promise<void>;
 }
 
 // Shared global registry — works across UMD boundaries
-function getRegistry(): TypeAction[] {
+function getRegistry(): Array<TypeAction> {
   const w = globalThis as any;
   if (!w.__embeddrTypeActions) w.__embeddrTypeActions = [];
   return w.__embeddrTypeActions;
@@ -49,7 +45,7 @@ export function registerTypeAction(action: TypeAction): () => void {
   };
 }
 
-export function getTypeActions(typeName: string): TypeAction[] {
+export function getTypeActions(typeName: string): Array<TypeAction> {
   return getRegistry().filter((a: TypeAction) => {
     if (a.type === typeName) return true;
     if (a.type.endsWith(":*")) {
@@ -60,6 +56,6 @@ export function getTypeActions(typeName: string): TypeAction[] {
   });
 }
 
-export function listTypeActions(): TypeAction[] {
+export function listTypeActions(): Array<TypeAction> {
   return [...getRegistry()];
 }

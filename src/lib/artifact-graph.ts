@@ -14,9 +14,7 @@ type EmbeddrApiLike = {
     getAnnotations?: (id: string) => Promise<Array<any>>;
     getEmbeddings?: (id: string) => Promise<Array<any>>;
     getFeatures?: (id: string) => Promise<Array<any>>;
-    getLineage?: (
-      id: string,
-    ) => Promise<{ parents?: Array<any>; children?: Array<any> }>;
+    getLineage?: (id: string) => Promise<{ parents?: Array<any>; children?: Array<any> }>;
   };
 };
 
@@ -47,21 +45,14 @@ export async function fetchArtifactGraphBundle(
   const getFeatures = artifactsApi?.getFeatures;
   const getLineage = artifactsApi?.getLineage;
 
-  const [artifact, relations, annotations, embeddings, features, lineage] =
-    await Promise.all([
-      maybeCall(getArtifact ? () => getArtifact(artifactId) : undefined, null),
-      maybeCall(getRelations ? () => getRelations(artifactId) : undefined, []),
-      maybeCall(
-        getAnnotations ? () => getAnnotations(artifactId) : undefined,
-        [],
-      ),
-      maybeCall(
-        getEmbeddings ? () => getEmbeddings(artifactId) : undefined,
-        [],
-      ),
-      maybeCall(getFeatures ? () => getFeatures(artifactId) : undefined, []),
-      maybeCall(getLineage ? () => getLineage(artifactId) : undefined, null),
-    ]);
+  const [artifact, relations, annotations, embeddings, features, lineage] = await Promise.all([
+    maybeCall(getArtifact ? () => getArtifact(artifactId) : undefined, null),
+    maybeCall(getRelations ? () => getRelations(artifactId) : undefined, []),
+    maybeCall(getAnnotations ? () => getAnnotations(artifactId) : undefined, []),
+    maybeCall(getEmbeddings ? () => getEmbeddings(artifactId) : undefined, []),
+    maybeCall(getFeatures ? () => getFeatures(artifactId) : undefined, []),
+    maybeCall(getLineage ? () => getLineage(artifactId) : undefined, null),
+  ]);
 
   return {
     artifact,
@@ -73,10 +64,7 @@ export async function fetchArtifactGraphBundle(
   };
 }
 
-export function getLatestAnnotation(
-  annotations: Array<any>,
-  annotationType: string,
-): any | null {
+export function getLatestAnnotation(annotations: Array<any>, annotationType: string): any | null {
   const matches = toArray(annotations)
     .filter((ann: any) => ann?.annotation_type === annotationType)
     .sort((a: any, b: any) => {
@@ -100,10 +88,7 @@ export function parseComfyWorkflowInputs(annotations: Array<any>): {
     return {
       workflowArtifactId: parsed.workflow_artifact_id || parsed.workflow_id,
       workflowName: parsed.workflow_name,
-      inputs:
-        parsed.inputs && typeof parsed.inputs === "object"
-          ? parsed.inputs
-          : undefined,
+      inputs: parsed.inputs && typeof parsed.inputs === "object" ? parsed.inputs : undefined,
     };
   } catch {
     return null;

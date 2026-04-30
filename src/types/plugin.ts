@@ -62,7 +62,6 @@ export interface ArtifactTypeSummaryResponse {
   total_artifacts: number;
 }
 
-
 // --- API Interface ---
 /**
  * The main interface passed to all plugin components and initialization functions.
@@ -109,10 +108,7 @@ export interface EmbeddrAPI {
     list: () => Array<any>;
     getActiveId: () => string | null;
     ensureDefault: () => void;
-    create: (
-      name: string,
-      options?: { fromCurrent?: boolean; isTemplate?: boolean },
-    ) => string;
+    create: (name: string, options?: { fromCurrent?: boolean; isTemplate?: boolean }) => string;
     save: (id: string) => void;
     saveActive: () => void;
     apply: (id: string) => void;
@@ -150,6 +146,8 @@ export interface EmbeddrAPI {
     success: (message: string) => void;
     /** Show an error toast. */
     error: (message: string) => void;
+    /** Show a warning toast — non-fatal but user should notice. */
+    warning: (message: string) => void;
     /** Show an informational toast. */
     info: (message: string) => void;
   };
@@ -178,7 +176,7 @@ export interface EmbeddrAPI {
      * Get a full URL for a plugin asset or route.
      * @param path - Relative path within the plugin's namespace.
      */
-      getPluginUrl: (path: string) => string;
+    getPluginUrl: (path: string) => string;
   };
   types: {
     summary: () => Promise<ArtifactTypeSummaryResponse>;
@@ -195,10 +193,7 @@ export interface EmbeddrAPI {
       sort?: "new" | "random";
       ids?: Array<string>;
     }) => Promise<{ items: Array<any>; count?: number }>;
-    get: (
-      id: string,
-      input?: { include_owner_profiles?: boolean },
-    ) => Promise<any>;
+    get: (id: string, input?: { include_owner_profiles?: boolean }) => Promise<any>;
     queryGraph: (input: {
       seed_ids: Array<string>;
       max_depth?: number;
@@ -266,10 +261,7 @@ export interface EmbeddrAPI {
       namespace_groups: Array<{ group: string; namespaces: Array<string> }>;
     }>;
     getContentUrl: (id: string) => string;
-    resolve: (input: {
-      id: string;
-      variant?: "preview" | "original";
-    }) => Promise<any>;
+    resolve: (input: { id: string; variant?: "preview" | "original" }) => Promise<any>;
     create: (input: {
       type_name: string;
       uri?: string;
@@ -297,10 +289,7 @@ export interface EmbeddrAPI {
       size?: number;
       confirm?: boolean;
     }) => Promise<any>;
-    uploadComplete: (input: {
-      upload_id: string;
-      confirm?: boolean;
-    }) => Promise<any>;
+    uploadComplete: (input: { upload_id: string; confirm?: boolean }) => Promise<any>;
     uploadFile: (input: { artifact_id: string; file: File }) => Promise<any>;
   };
   resources: {
@@ -322,12 +311,7 @@ export interface EmbeddrAPI {
   };
   client: {
     plugins: {
-      call: <T = any>(
-        pluginId: string,
-        path: string,
-        method: string,
-        body?: any,
-      ) => Promise<T>;
+      call: <T = any>(pluginId: string, path: string, method: string, body?: any) => Promise<T>;
     };
   };
   /**

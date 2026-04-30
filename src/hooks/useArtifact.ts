@@ -22,10 +22,7 @@ export interface ArtifactUrls {
  * @param backendUrl - The base backend URL (e.g. from api.utils.backendUrl)
  * @param id - The artifact ID
  */
-export const getArtifactUrls = (
-  backendUrl: string,
-  id: string | number,
-): ArtifactUrls => {
+export const getArtifactUrls = (backendUrl: string, id: string | number): ArtifactUrls => {
   const strId = id.toString();
   const apiBase = resolveApiBaseUrl(backendUrl);
 
@@ -51,9 +48,7 @@ export const getArtifactUrls = (
  * @param id - The ID of the artifact/image
  * @returns Object containing various URLs for the artifact
  */
-export const useArtifact = (
-  id: string | number | null | undefined,
-): ArtifactUrls | null => {
+export const useArtifact = (id: string | number | null | undefined): ArtifactUrls | null => {
   const { utils } = useEmbeddr();
 
   if (!id) return null;

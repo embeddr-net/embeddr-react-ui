@@ -25,8 +25,7 @@ export function useWebSocketEvent<TEvent extends keyof EmbeddrEventMap>(
   callback: WebSocketCallback<EmbeddrEventMap[TEvent]>,
 ) {
   const api = useEmbeddrAPI();
-  const savedCallback =
-    useRef<WebSocketCallback<EmbeddrEventMap[TEvent]>>(callback);
+  const savedCallback = useRef<WebSocketCallback<EmbeddrEventMap[TEvent]>>(callback);
 
   useEffect(() => {
     savedCallback.current = callback;
@@ -55,9 +54,7 @@ export function useWebSocketEvent<TEvent extends keyof EmbeddrEventMap>(
  *
  * Use this for debugging or monitoring multiple event types.
  */
-export function useWebSocketStream(
-  callback: WebSocketCallback<EmbeddrMessage>,
-) {
+export function useWebSocketStream(callback: WebSocketCallback<EmbeddrMessage>) {
   const api = useEmbeddrAPI();
   const savedCallback = useRef(callback);
 

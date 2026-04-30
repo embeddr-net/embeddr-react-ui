@@ -49,14 +49,18 @@ function fetchJson(api: any, path: string) {
  * Resolve type metadata for an artifact type from the server's type registry.
  */
 export function useTypeMetadata(api: any, typeName: string): TypeMeta | null {
-  const [types, setTypes] = React.useState<any[] | null>(null);
+  const [types, setTypes] = React.useState<Array<any> | null>(null);
 
   React.useEffect(() => {
     let alive = true;
-    fetchJson(api, "/types").then((data) => {
-      if (alive && Array.isArray(data)) setTypes(data);
-    }).catch(() => {});
-    return () => { alive = false; };
+    fetchJson(api, "/types")
+      .then((data) => {
+        if (alive && Array.isArray(data)) setTypes(data);
+      })
+      .catch(() => {});
+    return () => {
+      alive = false;
+    };
   }, [api]);
 
   return React.useMemo(() => {
@@ -80,15 +84,19 @@ export function usePluginComponent(
   componentName: string | undefined,
 ): React.ComponentType<any> | null {
   const [Component, setComponent] = React.useState<React.ComponentType<any> | null>(null);
-  const [manifests, setManifests] = React.useState<any[] | null>(null);
+  const [manifests, setManifests] = React.useState<Array<any> | null>(null);
 
   React.useEffect(() => {
     if (!pluginId || !componentName) return;
     let alive = true;
-    fetchJson(api, "/plugins").then((data) => {
-      if (alive && Array.isArray(data)) setManifests(data);
-    }).catch(() => {});
-    return () => { alive = false; };
+    fetchJson(api, "/plugins")
+      .then((data) => {
+        if (alive && Array.isArray(data)) setManifests(data);
+      })
+      .catch(() => {});
+    return () => {
+      alive = false;
+    };
   }, [api, pluginId, componentName]);
 
   React.useEffect(() => {
@@ -146,7 +154,9 @@ class OverlayErrorBoundary extends React.Component<
   { hasError: boolean }
 > {
   state = { hasError: false };
-  static getDerivedStateFromError() { return { hasError: true }; }
+  static getDerivedStateFromError() {
+    return { hasError: true };
+  }
   render() {
     return this.state.hasError ? null : this.props.children;
   }
@@ -173,12 +183,18 @@ export const TypePreviewRenderer: React.FC<TypePreviewRendererProps> = ({
     return React.createElement(React.Fragment, null, children);
   }
 
-  return React.createElement(React.Fragment, null,
+  return React.createElement(
+    React.Fragment,
+    null,
     children,
-    React.createElement("div", {
-      className: "absolute inset-0 pointer-events-none z-10",
-    },
-      React.createElement(OverlayErrorBoundary, null,
+    React.createElement(
+      "div",
+      {
+        className: "absolute inset-0 pointer-events-none z-10",
+      },
+      React.createElement(
+        OverlayErrorBoundary,
+        null,
         React.createElement(OverlayComponent, {
           api,
           artifact,

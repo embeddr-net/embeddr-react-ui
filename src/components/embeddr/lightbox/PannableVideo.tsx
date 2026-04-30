@@ -1,15 +1,6 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
-import {
-  Maximize,
-  Pause,
-  Play,
-  Repeat,
-  RotateCcw,
-  RotateCw,
-  Volume2,
-  VolumeX,
-} from "lucide-react";
-import { Button, Slider } from "@embeddr/react-ui/components/ui";
+import { Maximize, Pause, Play, Repeat, RotateCcw, RotateCw, Volume2, VolumeX } from "lucide-react";
+import { Button, Slider } from "../../ui";
 import { cn } from "../../../lib/utils";
 import type { PannableImageAction } from "./PannableImage";
 
@@ -245,10 +236,7 @@ export const PannableVideo: React.FC<PannableVideoProps> = ({
     // Show zoom indicator
     setShowZoomIndicator(true);
     if (zoomTimeoutRef.current) clearTimeout(zoomTimeoutRef.current);
-    zoomTimeoutRef.current = setTimeout(
-      () => setShowZoomIndicator(false),
-      2000,
-    );
+    zoomTimeoutRef.current = setTimeout(() => setShowZoomIndicator(false), 2000);
   }, []);
 
   // Mouse Drag Logic
@@ -481,16 +469,13 @@ export const PannableVideo: React.FC<PannableVideoProps> = ({
             <div className="absolute bottom-full right-0 mb-2 w-64 bg-background/95 backdrop-blur-sm border border-border p-3 text-xs text-muted-foreground shadow-lg">
               <div className="space-y-1">
                 <div>
-                  <span className="text-foreground">Scroll/Pinch:</span> Zoom
-                  in/out
+                  <span className="text-foreground">Scroll/Pinch:</span> Zoom in/out
                 </div>
                 <div>
-                  <span className="text-foreground">Drag:</span> Pan around
-                  video
+                  <span className="text-foreground">Drag:</span> Pan around video
                 </div>
                 <div>
-                  <span className="text-foreground">Double-click:</span> Reset
-                  view
+                  <span className="text-foreground">Double-click:</span> Reset view
                 </div>
               </div>
             </div>

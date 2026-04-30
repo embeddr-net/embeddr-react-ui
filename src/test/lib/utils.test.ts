@@ -9,9 +9,9 @@ describe("cn utility", () => {
   it("should handle conditional classes", () => {
     const includeBar = 1 + 1 === 2;
     const includeBaz = 1 + 1 === 3;
-    expect(
-      cn("foo", includeBar ? "bar" : undefined, includeBaz ? "baz" : undefined),
-    ).toBe("foo bar");
+    expect(cn("foo", includeBar ? "bar" : undefined, includeBaz ? "baz" : undefined)).toBe(
+      "foo bar",
+    );
   });
 
   it("should merge tailwind classes correctly", () => {

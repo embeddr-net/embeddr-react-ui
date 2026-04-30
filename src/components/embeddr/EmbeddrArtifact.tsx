@@ -3,14 +3,10 @@ import { Music } from "lucide-react";
 import { cn } from "../../lib/utils";
 import { EmbeddrDnDTypes } from "../../lib/dnd";
 import { useOptionalEmbeddrAPI } from "../../context/EmbeddrContext";
-import { EmbeddrImage } from "./EmbeddrImage";
 import { resolveApiBaseUrl } from "../../lib/url";
-import {
-  ArtifactContextMenu
-  
-  
-} from "./ArtifactContextMenu";
-import type {ArtifactContextMenuAction, ArtifactContextMenuContext} from "./ArtifactContextMenu";
+import { EmbeddrImage } from "./EmbeddrImage";
+import { ArtifactContextMenu } from "./ArtifactContextMenu";
+import type { ArtifactContextMenuAction, ArtifactContextMenuContext } from "./ArtifactContextMenu";
 
 export interface EmbeddrArtifactProps extends React.ImgHTMLAttributes<HTMLImageElement> {
   api?: any;
@@ -21,11 +17,7 @@ export interface EmbeddrArtifactProps extends React.ImgHTMLAttributes<HTMLImageE
   artifactPath?: string;
   artifactPayload?: Record<string, any>;
   variant?: "preview" | "content";
-  resolver?: (input: {
-    artifactId?: string;
-    url?: string;
-    hintType?: string;
-  }) => Promise<{
+  resolver?: (input: { artifactId?: string; url?: string; hintType?: string }) => Promise<{
     id?: string;
     type?: string;
     content_url?: string;
@@ -80,10 +72,7 @@ function isImageUrl(value?: string) {
   return IMAGE_EXTENSIONS.has(ext);
 }
 
-export const EmbeddrArtifact = React.forwardRef<
-  HTMLImageElement,
-  EmbeddrArtifactProps
->(
+export const EmbeddrArtifact = React.forwardRef<HTMLImageElement, EmbeddrArtifactProps>(
   (
     {
       api: apiProp,
@@ -170,9 +159,7 @@ export const EmbeddrArtifact = React.forwardRef<
         : resolved?.preview_url || resolved?.content_url;
 
     const artifactHintIsAudio = isAudioType(artifactType);
-    const resolvedType = artifactHintIsAudio
-      ? artifactType
-      : resolved?.type || artifactType;
+    const resolvedType = artifactHintIsAudio ? artifactType : resolved?.type || artifactType;
     const hasImagePreview = isImageUrl(resolved?.preview_url);
     const isAudio =
       isAudioType(resolvedType) ||
@@ -225,10 +212,7 @@ export const EmbeddrArtifact = React.forwardRef<
           path: artifactPath || null,
           ...(resolved?.payload ?? {}),
         };
-        e.dataTransfer.setData(
-          EmbeddrDnDTypes.ARTIFACT,
-          JSON.stringify(payload),
-        );
+        e.dataTransfer.setData(EmbeddrDnDTypes.ARTIFACT, JSON.stringify(payload));
 
         e.dataTransfer.effectAllowed = "copy";
 

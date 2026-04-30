@@ -7,9 +7,7 @@ console.warn = (...args: Array<unknown>) => {
   const firstArg = args[0];
   if (
     typeof firstArg === "string" &&
-    firstArg.includes(
-      "THREE.WARNING: Multiple instances of Three.js being imported",
-    )
+    firstArg.includes("THREE.WARNING: Multiple instances of Three.js being imported")
   ) {
     return;
   }

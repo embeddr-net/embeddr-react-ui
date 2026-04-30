@@ -1,17 +1,14 @@
 import { ChevronDown, ChevronUp } from "lucide-react";
 import { useState } from "react";
-import { useImageDialog } from "@embeddr/react-ui";
-import type { Gallery } from "@embeddr/react-ui/types/gallery";
+import { useImageDialog } from "../../../hooks/useImageDialog";
+import type { Gallery } from "../../../types/gallery";
 
 interface GalleryPickerProps {
   currentGalleryId?: string;
   onGalleryChange: (galleryId: string) => void;
 }
 
-export const GalleryPicker = ({
-  currentGalleryId,
-  onGalleryChange,
-}: GalleryPickerProps) => {
+export const GalleryPicker = ({ currentGalleryId, onGalleryChange }: GalleryPickerProps) => {
   const [isOpen, setIsOpen] = useState(false);
   const { galleries } = useImageDialog();
 
@@ -35,9 +32,7 @@ export const GalleryPicker = ({
               <div className="text-left">
                 <div className="font-medium text-sm">{currentGallery.name}</div>
                 {currentGallery.description && (
-                  <div className="text-xs text-muted-foreground">
-                    {currentGallery.description}
-                  </div>
+                  <div className="text-xs text-muted-foreground">{currentGallery.description}</div>
                 )}
               </div>
             </>

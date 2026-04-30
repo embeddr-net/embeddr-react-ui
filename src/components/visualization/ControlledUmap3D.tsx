@@ -1,11 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
-import {
-  Billboard,
-  Image as DreiImage,
-  Html,
-  OrbitControls,
-} from "@react-three/drei";
+import { Billboard, Image as DreiImage, Html, OrbitControls } from "@react-three/drei";
 import * as THREE from "three";
 import { Loader2 } from "lucide-react";
 import type { ThreeEvent } from "@react-three/fiber";
@@ -165,11 +160,7 @@ const PointCloud = ({
   fallbackPositions: Float32Array;
   colors: Float32Array;
   onHover: (index: number | null, point: Point3D | null) => void;
-  onClick: (
-    index: number,
-    point: Point3D,
-    event: ThreeEvent<MouseEvent>,
-  ) => void;
+  onClick: (index: number, point: Point3D, event: ThreeEvent<MouseEvent>) => void;
   hiddenIndices?: Set<number>;
 }) => {
   const meshRef = useRef<THREE.Points>(null);
@@ -218,12 +209,7 @@ const PointCloud = ({
   const handleClick = (e: ThreeEvent<MouseEvent>) => {
     e.stopPropagation();
     const index = e.index;
-    if (
-      index !== undefined &&
-      index >= 0 &&
-      index < points.length &&
-      points[index]
-    ) {
+    if (index !== undefined && index >= 0 && index < points.length && points[index]) {
       onClick(index, points[index], e);
     }
   };
@@ -262,13 +248,7 @@ const PointCloud = ({
           />
         )}
       </bufferGeometry>
-      <pointsMaterial
-        size={0.2}
-        vertexColors
-        sizeAttenuation
-        transparent
-        opacity={0.8}
-      />
+      <pointsMaterial size={0.2} vertexColors sizeAttenuation transparent opacity={0.8} />
     </points>
   );
 };
@@ -353,9 +333,7 @@ const ImageCloud = ({
   const visiblePoints = useMemo(() => {
     // Map with original indices properly
     if (!highlightedIds) {
-      return points
-        .slice(0, maxImages)
-        .map((p, i) => ({ ...p, originalIndex: i }));
+      return points.slice(0, maxImages).map((p, i) => ({ ...p, originalIndex: i }));
     }
     // Expensive search? Map first then filter? Or just iterate?
     // We need original index to look up buffer
@@ -467,8 +445,10 @@ const SceneContent = ({
   const { camera } = useThree();
 
   // Unified animation hook - MUST be inside Canvas
-  const { currentPositionsRef, colors, targetPositions } =
-    useUnifyingPointTransition(points, highlightedIds);
+  const { currentPositionsRef, colors, targetPositions } = useUnifyingPointTransition(
+    points,
+    highlightedIds,
+  );
 
   useEffect(() => {
     if (onCameraUpdate && controlsRef.current) {
@@ -581,9 +561,7 @@ const SceneContent = ({
   );
 };
 
-export const ControlledUmap3D = (
-  props: ControlledUmap3DProps & { renderImageMode?: boolean },
-) => {
+export const ControlledUmap3D = (props: ControlledUmap3DProps & { renderImageMode?: boolean }) => {
   if (props.isLoading) {
     return (
       <div className="flex items-center justify-center w-full h-full bg-muted/10">
@@ -593,11 +571,7 @@ export const ControlledUmap3D = (
   }
 
   return (
-    <div
-      className={`w-full h-full bg-card relative overflow-hidden ${
-        props.className || ""
-      }`}
-    >
+    <div className={`w-full h-full bg-card relative overflow-hidden ${props.className || ""}`}>
       <Canvas
         camera={{ position: [0, 0, 15], fov: 50 }}
         raycaster={{ params: { Points: { threshold: 0.2 } } as any }}

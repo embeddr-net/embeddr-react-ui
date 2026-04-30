@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { Loader2, Maximize, Pause, Play, Volume2, VolumeX } from "lucide-react";
-import { Button, Slider } from "@embeddr/react-ui/components/ui";
+import { Button, Slider } from "../ui";
 import { cn } from "../../lib/utils";
 
 interface VideoPlayerProps {
@@ -76,25 +76,23 @@ const normalizePersistenceSource = (url: string) => {
       value,
       typeof window !== "undefined" ? window.location.origin : "http://localhost",
     );
-    const filteredEntries = Array.from(urlObj.searchParams.entries()).filter(
-      ([key]) => {
-        const lowerKey = key.toLowerCase();
-        if (
-          lowerKey === "start" ||
-          lowerKey === "apikey" ||
-          lowerKey === "api_key" ||
-          lowerKey === "token" ||
-          lowerKey === "authorization" ||
-          lowerKey === "sig" ||
-          lowerKey === "signature" ||
-          lowerKey === "expires" ||
-          lowerKey.startsWith("x-amz-")
-        ) {
-          return false;
-        }
-        return true;
-      },
-    );
+    const filteredEntries = Array.from(urlObj.searchParams.entries()).filter(([key]) => {
+      const lowerKey = key.toLowerCase();
+      if (
+        lowerKey === "start" ||
+        lowerKey === "apikey" ||
+        lowerKey === "api_key" ||
+        lowerKey === "token" ||
+        lowerKey === "authorization" ||
+        lowerKey === "sig" ||
+        lowerKey === "signature" ||
+        lowerKey === "expires" ||
+        lowerKey.startsWith("x-amz-")
+      ) {
+        return false;
+      }
+      return true;
+    });
     filteredEntries.sort(([a], [b]) => a.localeCompare(b));
     urlObj.search = "";
     for (const [key, entryValue] of filteredEntries) {
@@ -125,9 +123,7 @@ const buildMediaStateStorageKey = (id: string) => {
   return `embeddr:video-player:media:${id}`;
 };
 
-const readPersistedMediaState = (
-  key: string,
-): PersistedMediaVideoState | null => {
+const readPersistedMediaState = (key: string): PersistedMediaVideoState | null => {
   const value = readStorageValue<PersistedMediaVideoState>(key);
   if (!value || value.version !== 1) return null;
   return {
@@ -180,10 +176,7 @@ const withServerSeekOffset = (url: string, offsetSeconds: number) => {
       url,
       typeof window !== "undefined" ? window.location.origin : "http://localhost",
     );
-    urlObj.searchParams.set(
-      "start",
-      String(Math.max(0, Math.floor(offsetSeconds))),
-    );
+    urlObj.searchParams.set("start", String(Math.max(0, Math.floor(offsetSeconds))));
     return urlObj.toString();
   } catch {
     return url;
@@ -225,26 +218,19 @@ export const VideoPlayer = React.memo(function VideoPlayer({
   const [progress, setProgress] = useState(0); // 0 to 100
   const [duration, setDuration] = useState(0);
   const [currentTime, setCurrentTime] = useState(0);
-  const [isMuted, setIsMuted] = useState(
-    initialGlobalStateRef.current?.muted ?? muted,
-  );
-  const [volume, setVolume] = useState(
-    initialGlobalStateRef.current?.volume ?? 1,
-  );
+  const [isMuted, setIsMuted] = useState(initialGlobalStateRef.current?.muted ?? muted);
+  const [volume, setVolume] = useState(initialGlobalStateRef.current?.volume ?? 1);
   const [isLoading, setIsLoading] = useState(true);
   const [showControls, setShowControls] = useState(false);
 
   const resolvedPersistenceId = React.useMemo(() => {
     if (persistenceKey === false) return null;
-    const explicit =
-      typeof persistenceKey === "string" ? persistenceKey.trim() : "";
+    const explicit = typeof persistenceKey === "string" ? persistenceKey.trim() : "";
     return explicit || buildDefaultPersistenceId(src);
   }, [persistenceKey, src]);
 
   const mediaStateStorageKey = React.useMemo(() => {
-    return resolvedPersistenceId
-      ? buildMediaStateStorageKey(resolvedPersistenceId)
-      : null;
+    return resolvedPersistenceId ? buildMediaStateStorageKey(resolvedPersistenceId) : null;
   }, [resolvedPersistenceId]);
 
   // Sync volume/muted from state and incoming prop updates.
@@ -283,14 +269,11 @@ export const VideoPlayer = React.memo(function VideoPlayer({
     const resumeTime = Math.max(0, persistedState?.currentTime ?? 0);
     const resumeWithServerSeek = resumeTime > 0 && isWebmSceneStream(src);
 
-    setActiveSrc(
-      resumeWithServerSeek ? withServerSeekOffset(src, resumeTime) : src,
-    );
+    setActiveSrc(resumeWithServerSeek ? withServerSeekOffset(src, resumeTime) : src);
     timelineOffsetRef.current = resumeWithServerSeek
       ? Math.floor(resumeTime)
       : getServerSeekOffset(src);
-    pendingResumeTimeRef.current =
-      resumeTime > 0 && !resumeWithServerSeek ? resumeTime : null;
+    pendingResumeTimeRef.current = resumeTime > 0 && !resumeWithServerSeek ? resumeTime : null;
     resumePlaybackRef.current = persistedState?.isPlaying ?? null;
     scrubbingRef.current = false;
     resetTimelineState();
@@ -313,8 +296,7 @@ export const VideoPlayer = React.memo(function VideoPlayer({
   }, [isMuted, volume]);
 
   const updateDurationState = useCallback((nextDuration: number) => {
-    const safeDuration =
-      Number.isFinite(nextDuration) && nextDuration > 0 ? nextDuration : 0;
+    const safeDuration = Number.isFinite(nextDuration) && nextDuration > 0 ? nextDuration : 0;
     if (Math.abs(durationRef.current - safeDuration) < 0.01) return;
     durationRef.current = safeDuration;
     setDuration(safeDuration);
@@ -325,9 +307,7 @@ export const VideoPlayer = React.memo(function VideoPlayer({
       const video = videoRef.current;
       if (!video) return;
 
-      const localCurrent = Number.isFinite(video.currentTime)
-        ? video.currentTime
-        : 0;
+      const localCurrent = Number.isFinite(video.currentTime) ? video.currentTime : 0;
       const localDuration =
         Number.isFinite(video.duration) && video.duration > 0 ? video.duration : 0;
       if (timelineOffsetRef.current <= 0 && localDuration > 0) {
@@ -337,12 +317,8 @@ export const VideoPlayer = React.memo(function VideoPlayer({
       }
 
       const totalDuration = fullDurationRef.current || localDuration;
-      const current = Math.min(
-        totalDuration || Infinity,
-        timelineOffsetRef.current + localCurrent,
-      );
-      const nextProgress =
-        totalDuration > 0 ? (current / totalDuration) * 100 : 0;
+      const current = Math.min(totalDuration || Infinity, timelineOffsetRef.current + localCurrent);
+      const nextProgress = totalDuration > 0 ? (current / totalDuration) * 100 : 0;
 
       updateDurationState(totalDuration);
 
@@ -436,10 +412,7 @@ export const VideoPlayer = React.memo(function VideoPlayer({
     const video = videoRef.current;
     const pendingResumeTime = pendingResumeTimeRef.current;
     if (!video || pendingResumeTime === null) return;
-    const localTarget = Math.max(
-      0,
-      pendingResumeTime - timelineOffsetRef.current,
-    );
+    const localTarget = Math.max(0, pendingResumeTime - timelineOffsetRef.current);
     try {
       video.currentTime = localTarget;
     } catch {
@@ -545,21 +518,24 @@ export const VideoPlayer = React.memo(function VideoPlayer({
     revealControls();
   }, [isMuted, revealControls]);
 
-  const handleVolumeChange = useCallback((value: Array<number>) => {
-    const newVol = value[0] ?? 1; // Default to 1 if undefined
-    if (videoRef.current) {
-      videoRef.current.volume = newVol;
-      setVolume(newVol);
-      if (newVol === 0 && !videoRef.current.muted) {
-        videoRef.current.muted = true;
-        setIsMuted(true);
-      } else if (newVol > 0 && videoRef.current.muted) {
-        videoRef.current.muted = false;
-        setIsMuted(false);
+  const handleVolumeChange = useCallback(
+    (value: Array<number>) => {
+      const newVol = value[0] ?? 1; // Default to 1 if undefined
+      if (videoRef.current) {
+        videoRef.current.volume = newVol;
+        setVolume(newVol);
+        if (newVol === 0 && !videoRef.current.muted) {
+          videoRef.current.muted = true;
+          setIsMuted(true);
+        } else if (newVol > 0 && videoRef.current.muted) {
+          videoRef.current.muted = false;
+          setIsMuted(false);
+        }
       }
-    }
-    revealControls();
-  }, [revealControls]);
+      revealControls();
+    },
+    [revealControls],
+  );
 
   const handleTimeUpdate = () => {
     if (!controls) return;
@@ -592,47 +568,50 @@ export const VideoPlayer = React.memo(function VideoPlayer({
     [controls, getEffectiveDuration, revealControls],
   );
 
-  const handleSeekCommit = useCallback((value: Array<number>) => {
-    if (!videoRef.current || value[0] === undefined) {
-      scrubbingRef.current = false;
-      return;
-    }
-    const seekVal = value[0];
-    const effectiveDuration = getEffectiveDuration();
-    if (effectiveDuration <= 0) {
-      scrubbingRef.current = false;
-      return;
-    }
-    const newTime = (seekVal / 100) * effectiveDuration;
-    const video = videoRef.current;
-    const shouldUseServerSeek =
-      isServerSeekableSceneStream(activeSrc) &&
-      (isWebmSceneStream(activeSrc) || video.seekable.length === 0);
+  const handleSeekCommit = useCallback(
+    (value: Array<number>) => {
+      if (!videoRef.current || value[0] === undefined) {
+        scrubbingRef.current = false;
+        return;
+      }
+      const seekVal = value[0];
+      const effectiveDuration = getEffectiveDuration();
+      if (effectiveDuration <= 0) {
+        scrubbingRef.current = false;
+        return;
+      }
+      const newTime = (seekVal / 100) * effectiveDuration;
+      const video = videoRef.current;
+      const shouldUseServerSeek =
+        isServerSeekableSceneStream(activeSrc) &&
+        (isWebmSceneStream(activeSrc) || video.seekable.length === 0);
 
-    if (shouldUseServerSeek) {
-      timelineOffsetRef.current = newTime;
+      if (shouldUseServerSeek) {
+        timelineOffsetRef.current = newTime;
+        currentTimeRef.current = newTime;
+        progressRef.current = seekVal;
+        setCurrentTime(newTime);
+        setProgress(seekVal);
+        setIsLoading(true);
+        resumePlaybackRef.current = autoPlay || !video.paused;
+        setActiveSrc(withServerSeekOffset(activeSrc, newTime));
+        scrubbingRef.current = false;
+        persistPlaybackState(true, !video.paused);
+        revealControls();
+        return;
+      }
+
+      video.currentTime = newTime;
       currentTimeRef.current = newTime;
       progressRef.current = seekVal;
-      setCurrentTime(newTime);
       setProgress(seekVal);
-      setIsLoading(true);
-      resumePlaybackRef.current = autoPlay || !video.paused;
-      setActiveSrc(withServerSeekOffset(activeSrc, newTime));
+      setCurrentTime(newTime);
       scrubbingRef.current = false;
       persistPlaybackState(true, !video.paused);
       revealControls();
-      return;
-    }
-
-    video.currentTime = newTime;
-    currentTimeRef.current = newTime;
-    progressRef.current = seekVal;
-    setProgress(seekVal);
-    setCurrentTime(newTime);
-    scrubbingRef.current = false;
-    persistPlaybackState(true, !video.paused);
-    revealControls();
-  }, [activeSrc, autoPlay, getEffectiveDuration, persistPlaybackState, revealControls]);
+    },
+    [activeSrc, autoPlay, getEffectiveDuration, persistPlaybackState, revealControls],
+  );
 
   const handleDurationChange = () => {
     if (!controls) return;

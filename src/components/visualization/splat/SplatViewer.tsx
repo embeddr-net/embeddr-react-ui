@@ -64,8 +64,7 @@ function GaussianCloud({ data, config }: GaussianCloudProps) {
     const count = Math.min(data.count, config.renderLimit);
 
     const geo = new THREE.BufferGeometry();
-    const posArr =
-      count < data.count ? data.positions.slice(0, count * 3) : data.positions;
+    const posArr = count < data.count ? data.positions.slice(0, count * 3) : data.positions;
     geo.setAttribute("position", new THREE.Float32BufferAttribute(posArr, 3));
 
     const colorArr = new Float32Array(count * 3);
@@ -227,10 +226,7 @@ function SplatScene({ data, bounds, config }: SplatSceneProps) {
 
   return (
     <>
-      <fog
-        attach="fog"
-        args={[config.backgroundColor, bounds.radius * 0.5, bounds.radius * 6]}
-      />
+      <fog attach="fog" args={[config.backgroundColor, bounds.radius * 0.5, bounds.radius * 6]} />
       <ambientLight intensity={0.3} />
       <pointLight position={[10, 10, 10]} intensity={0.5} />
 

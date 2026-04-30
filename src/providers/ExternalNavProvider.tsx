@@ -9,11 +9,7 @@ import {
 } from "../components/ui";
 import { ExternalNavContext } from "../hooks/useExternalNav";
 
-export function ExternalNavProvider({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+export function ExternalNavProvider({ children }: { children: React.ReactNode }) {
   const [open, setOpen] = useState(false);
   const [href, setHref] = useState<string | null>(null);
 
@@ -50,9 +46,7 @@ export function ExternalNavProvider({
         <DialogContent className="max-w-md overflow-hidden">
           <DialogTitle>Leaving site</DialogTitle>
 
-          <DialogDescription>
-            You are about to open an external site. Continue?
-          </DialogDescription>
+          <DialogDescription>You are about to open an external site. Continue?</DialogDescription>
 
           {href && (
             <a

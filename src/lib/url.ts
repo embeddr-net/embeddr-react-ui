@@ -16,9 +16,7 @@
  *   stripApiVersion("http://localhost:8080/api") // "http://localhost:8080"
  */
 export function stripApiVersion(backendUrl: string): string {
-  return (backendUrl || "")
-    .replace(/\/api(?:\/v\d+)?\/?$/, "")
-    .replace(/\/$/, "");
+  return (backendUrl || "").replace(/\/api(?:\/v\d+)?\/?$/, "").replace(/\/$/, "");
 }
 
 /**
@@ -46,7 +44,10 @@ export function resolveApiBaseUrl(backendUrl?: string): string {
 export function appendApiKeyToUrl(url: string, apiKey?: string | null): string {
   if (!url || !apiKey) return url;
   try {
-    const urlObj = new URL(url, typeof window !== "undefined" ? window.location.origin : "http://localhost");
+    const urlObj = new URL(
+      url,
+      typeof window !== "undefined" ? window.location.origin : "http://localhost",
+    );
     urlObj.searchParams.set("api_key", apiKey);
     return urlObj.toString();
   } catch {
@@ -60,9 +61,7 @@ export function appendApiKeyToUrl(url: string, apiKey?: string | null): string {
  *
  * Falls back to window.location.origin when no backendUrl is set.
  */
-export function getBackendBase(api: {
-  utils?: { backendUrl?: string };
-}): string {
+export function getBackendBase(api: { utils?: { backendUrl?: string } }): string {
   const raw = api.utils?.backendUrl ?? "";
   if (!raw && typeof window !== "undefined") return window.location.origin;
   return stripApiVersion(raw);
@@ -71,10 +70,7 @@ export function getBackendBase(api: {
 /**
  * Build an artifact content URL.
  */
-export function artifactContentUrl(
-  artifactId: string,
-  backendUrl?: string,
-): string {
+export function artifactContentUrl(artifactId: string, backendUrl?: string): string {
   const apiBase = resolveApiBaseUrl(backendUrl);
   return `${apiBase}/artifacts/${artifactId}/content`;
 }
@@ -82,10 +78,7 @@ export function artifactContentUrl(
 /**
  * Build an artifact preview/thumbnail URL.
  */
-export function artifactPreviewUrl(
-  artifactId: string,
-  backendUrl?: string,
-): string {
+export function artifactPreviewUrl(artifactId: string, backendUrl?: string): string {
   const apiBase = resolveApiBaseUrl(backendUrl);
   return `${apiBase}/artifacts/${artifactId}/preview`;
 }

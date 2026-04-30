@@ -9,7 +9,7 @@ import {
   Separator,
   Slider,
   Switch,
-} from "@embeddr/react-ui/components/ui";
+} from "../../ui";
 import { GalleryPicker } from "./GalleryPicker";
 import { ImageThumbnailStrip } from "./ImageThumbnailStrip";
 import { PannableVideo } from "./PannableVideo";
@@ -109,13 +109,7 @@ export const LightboxViewer = ({
     return () => {
       if (timerRef.current) clearTimeout(timerRef.current);
     };
-  }, [
-    isPlaying,
-    isVideo,
-    settings.slideDuration,
-    settings.videoAutoAdvance,
-    nextSlide,
-  ]);
+  }, [isPlaying, isVideo, settings.slideDuration, settings.videoAutoAdvance, nextSlide]);
 
   // Handle Video Ended (for slideshow)
   const handleVideoEnded = useCallback(() => {
@@ -158,10 +152,7 @@ export const LightboxViewer = ({
       {showGalleryPicker && (
         <div className="absolute top-0 left-0 right-0 z-20 pointer-events-none">
           <div className="pointer-events-auto">
-            <GalleryPicker
-              currentGalleryId={gallery?.id}
-              onGalleryChange={onGalleryChange}
-            />
+            <GalleryPicker currentGalleryId={gallery?.id} onGalleryChange={onGalleryChange} />
           </div>
         </div>
       )}
@@ -174,8 +165,7 @@ export const LightboxViewer = ({
           disabled
           className="px-4 flex items-center justify-center text-sm font-medium text-muted-foreground backdrop-blur-sm shadow-sm"
         >
-          {imageIndex + 1} /{" "}
-          {gallery?.totalImages || gallery?.images.length || 0}
+          {imageIndex + 1} / {gallery?.totalImages || gallery?.images.length || 0}
         </Button>
 
         <Button
@@ -185,11 +175,7 @@ export const LightboxViewer = ({
           className=" bg-background/90 hover:bg-secondary/20 text-muted-foreground hover:text-foreground border border-border backdrop-blur-sm shadow-sm"
           title={isPlaying ? "Pause slideshow" : "Start slideshow"}
         >
-          {isPlaying ? (
-            <Pause className="h-4 w-4" />
-          ) : (
-            <Play className="h-4 w-4" />
-          )}
+          {isPlaying ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
         </Button>
 
         {/* Settings Popover */}
@@ -203,16 +189,11 @@ export const LightboxViewer = ({
               <Settings2 className="h-4 w-4" />
             </Button>
           </PopoverTrigger>
-          <PopoverContent
-            align="end"
-            className="w-80 bg-background/95 backdrop-blur-md"
-          >
+          <PopoverContent align="end" className="w-80 bg-background/95 backdrop-blur-md">
             <div className="grid gap-4">
               <div className="space-y-2">
                 <h4 className="font-medium leading-none">Slideshow Settings</h4>
-                <p className="text-sm text-muted-foreground">
-                  Customize playback behavior.
-                </p>
+                <p className="text-sm text-muted-foreground">Customize playback behavior.</p>
               </div>
               <Separator />
 
@@ -230,9 +211,7 @@ export const LightboxViewer = ({
                   max={10000}
                   step={500}
                   value={[settings.slideDuration]}
-                  onValueChange={(val) =>
-                    updateSettings({ slideDuration: val[0] ?? 3000 })
-                  }
+                  onValueChange={(val) => updateSettings({ slideDuration: val[0] ?? 3000 })}
                 />
               </div>
 
@@ -241,10 +220,7 @@ export const LightboxViewer = ({
               {/* Video Settings */}
               <div className="space-y-4">
                 <div className="flex justify-between">
-                  <Label
-                    htmlFor="auto-advance"
-                    className=" items-start flex flex-col gap-1"
-                  >
+                  <Label htmlFor="auto-advance" className=" items-start flex flex-col gap-1">
                     <span>Video Auto-Advance</span>
                     <span className="font-normal text-xs text-muted-foreground">
                       Next slide when video ends
@@ -253,16 +229,11 @@ export const LightboxViewer = ({
                   <Switch
                     id="auto-advance"
                     checked={settings.videoAutoAdvance}
-                    onCheckedChange={(c) =>
-                      updateSettings({ videoAutoAdvance: c })
-                    }
+                    onCheckedChange={(c) => updateSettings({ videoAutoAdvance: c })}
                   />
                 </div>
                 <div className="flex justify-between">
-                  <Label
-                    htmlFor="video-loop"
-                    className=" items-start flex flex-col gap-1"
-                  >
+                  <Label htmlFor="video-loop" className=" items-start flex flex-col gap-1">
                     <span>Loop Videos</span>
                     <span className="font-normal text-xs text-muted-foreground">
                       Repeat video when playing manually
@@ -275,10 +246,7 @@ export const LightboxViewer = ({
                   />
                 </div>
                 <div className="flex justify-between">
-                  <Label
-                    htmlFor="video-play"
-                    className="items-start flex flex-col gap-1"
-                  >
+                  <Label htmlFor="video-play" className="items-start flex flex-col gap-1">
                     <span>Auto Play</span>
                     <span className="font-normal text-xs text-muted-foreground">
                       Start videos automatically
@@ -287,9 +255,7 @@ export const LightboxViewer = ({
                   <Switch
                     id="video-play"
                     checked={settings.videoAutoPlay}
-                    onCheckedChange={(c) =>
-                      updateSettings({ videoAutoPlay: c })
-                    }
+                    onCheckedChange={(c) => updateSettings({ videoAutoPlay: c })}
                   />
                 </div>
               </div>
@@ -318,11 +284,7 @@ export const LightboxViewer = ({
               autoPlay={settings.videoAutoPlay}
               controlsMode={videoControls}
               // If we are in slideshow mode AND auto-advance is on, we force loop to false so it ends
-              loop={
-                isPlaying && settings.videoAutoAdvance
-                  ? false
-                  : settings.videoLoop
-              }
+              loop={isPlaying && settings.videoAutoAdvance ? false : settings.videoLoop}
               onEnded={handleVideoEnded}
             />
           ) : (

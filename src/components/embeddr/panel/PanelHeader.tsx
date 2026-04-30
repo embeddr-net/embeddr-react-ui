@@ -109,9 +109,7 @@ export function PanelHeader({
             {titleIcon}
           </span>
         ) : null}
-        <span className="embeddr-panel-title-text truncate max-w-40">
-          {title}
-        </span>
+        <span className="embeddr-panel-title-text truncate max-w-40">{title}</span>
       </div>
       <div className="embeddr-panel-controls flex items-center gap-1">
         <DropdownMenu>
@@ -129,10 +127,7 @@ export function PanelHeader({
               <Settings className="h-3 w-3" />
             </Button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent
-            align="end"
-            className="embeddr-panel-menu z-1000000"
-          >
+          <DropdownMenuContent align="end" className="embeddr-panel-menu z-1000000">
             {additionalSettingsItems && (
               <>
                 {additionalSettingsItems}
@@ -154,11 +149,7 @@ export function PanelHeader({
               </DropdownMenuItem>
             )}
             <DropdownMenuItem
-              onClick={() =>
-                onTitlePositionChange(
-                  titlePosition === "top" ? "bottom" : "top",
-                )
-              }
+              onClick={() => onTitlePositionChange(titlePosition === "top" ? "bottom" : "top")}
             >
               {titlePosition === "top" ? (
                 <>

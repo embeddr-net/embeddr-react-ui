@@ -79,10 +79,7 @@ Use explicit subpath imports for clear boundaries:
 
 ```tsx
 import { Button, Card, ScrollArea } from "@embeddr/react-ui/components/ui";
-import {
-  EmbeddrImage,
-  VideoPlayer,
-} from "@embeddr/react-ui/components/embeddr";
+import { EmbeddrImage, VideoPlayer } from "@embeddr/react-ui/components/embeddr";
 import { Umap3DExplorer } from "@embeddr/react-ui/components/visualization";
 import { usePluginDrop, usePluginStorage } from "@embeddr/react-ui/hooks";
 import { usePluginAPI } from "@embeddr/react-ui/hooks/plugin";

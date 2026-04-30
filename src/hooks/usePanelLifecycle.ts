@@ -22,10 +22,7 @@ export interface PanelUpdatePayload {
   meta?: Record<string, unknown>;
 }
 
-type PluginRequestFn = <T = unknown>(
-  path: string,
-  init?: RequestInit,
-) => Promise<T>;
+type PluginRequestFn = <T = unknown>(path: string, init?: RequestInit) => Promise<T>;
 
 /**
  * Manages the lifecycle of a Lotus UI panel — registers on mount,
@@ -34,10 +31,7 @@ type PluginRequestFn = <T = unknown>(
  * Replaces direct `/execute/ui.panel_register|update|unregister` calls
  * in plugin panel components.
  */
-export function usePanelLifecycle(
-  request: PluginRequestFn,
-  config: PanelLifecycleConfig,
-) {
+export function usePanelLifecycle(request: PluginRequestFn, config: PanelLifecycleConfig) {
   const configRef = useRef(config);
   configRef.current = config;
 
@@ -45,7 +39,13 @@ export function usePanelLifecycle(
     const { panelId, panelType, title, windowId, meta } = configRef.current;
     request("/execute/ui.panel_register", {
       method: "POST",
-      body: JSON.stringify({ panel_id: panelId, panel_type: panelType, title, window_id: windowId ?? null, meta }),
+      body: JSON.stringify({
+        panel_id: panelId,
+        panel_type: panelType,
+        title,
+        window_id: windowId ?? null,
+        meta,
+      }),
     }).catch(() => undefined);
 
     return () => {
@@ -54,7 +54,6 @@ export function usePanelLifecycle(
         body: JSON.stringify({ panel_id: configRef.current.panelId }),
       }).catch(() => undefined);
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const updatePanel = useCallback(

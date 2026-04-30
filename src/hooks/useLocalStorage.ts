@@ -20,23 +20,19 @@ export function useLocalStorage<T>(key: string, initialValue: T) {
 
   // Return a wrapped version of useState's setter function that ...
   // ... persists the new value to localStorage.
-  const setValue = useCallback(
-    (value: T | ((val: T) => T)) => {
-      try {
-        setStoredValue((current) => {
-          const valueToStore =
-            value instanceof Function ? value(current) : value;
-          if (Object.is(valueToStore, current)) {
-            return current;
-          }
-          return valueToStore;
-        });
-      } catch (error) {
-        console.log(error);
-      }
-    },
-    [],
-  );
+  const setValue = useCallback((value: T | ((val: T) => T)) => {
+    try {
+      setStoredValue((current) => {
+        const valueToStore = value instanceof Function ? value(current) : value;
+        if (Object.is(valueToStore, current)) {
+          return current;
+        }
+        return valueToStore;
+      });
+    } catch (error) {
+      console.log(error);
+    }
+  }, []);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -48,9 +44,7 @@ export function useLocalStorage<T>(key: string, initialValue: T) {
 
       window.localStorage.setItem(key, serialized);
       lastSerializedRef.current = serialized;
-      window.dispatchEvent(
-        new CustomEvent("local-storage-update", { detail: { key } }),
-      );
+      window.dispatchEvent(new CustomEvent("local-storage-update", { detail: { key } }));
       window.dispatchEvent(new Event("local-storage"));
     } catch (error) {
       console.log(error);
@@ -59,10 +53,7 @@ export function useLocalStorage<T>(key: string, initialValue: T) {
 
   useEffect(() => {
     const handleStorageChange = (event: Event) => {
-      if (
-        event.type === "local-storage-update" &&
-        (event as CustomEvent).detail?.key !== key
-      ) {
+      if (event.type === "local-storage-update" && (event as CustomEvent).detail?.key !== key) {
         return;
       }
       try {

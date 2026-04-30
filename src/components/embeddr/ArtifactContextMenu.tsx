@@ -1,19 +1,13 @@
 import React from "react";
-import {
-  Copy,
-  Download,
-  ExternalLink,
-  Eye,
-  Image as ImageIcon,
-} from "lucide-react";
-import { resolveApiBaseUrl } from "../../lib/url";
+import { Copy, Download, ExternalLink, Eye, Image as ImageIcon } from "lucide-react";
 import {
   ContextMenu,
   ContextMenuContent,
   ContextMenuItem,
   ContextMenuSeparator,
   ContextMenuTrigger,
-} from "@embeddr/react-ui/components/ui";
+} from "../ui";
+import { resolveApiBaseUrl } from "../../lib/url";
 import type { EmbeddrAPI } from "../../types";
 
 export type ArtifactContextSource = "core" | "plugin" | "custom";
@@ -152,11 +146,11 @@ function buildDefaultActions(
     const utf8Match = value.match(/filename\*=UTF-8''([^;]+)/i);
     if (utf8Match?.[1]) {
       try {
-        return decodeURIComponent(utf8Match[1]).replace(/\"/g, "").trim();
+        return decodeURIComponent(utf8Match[1]).replace(/"/g, "").trim();
       } catch {}
     }
 
-    const basicMatch = value.match(/filename=\"?([^\";]+)\"?/i);
+    const basicMatch = value.match(/filename="?([^";]+)"?/i);
     return basicMatch?.[1]?.trim() || "";
   };
 
@@ -168,9 +162,7 @@ function buildDefaultActions(
     artifactPayload,
   }: ArtifactContextMenuContext) => {
     const fromPayload =
-      extensionFromName(
-        String(artifactPayload?.metadata_json?.filename || ""),
-      ) ||
+      extensionFromName(String(artifactPayload?.metadata_json?.filename || "")) ||
       extensionFromName(String(artifactPayload?.metadata_json?.name || "")) ||
       extensionFromName(String(artifactPayload?.filename || "")) ||
       extensionFromName(String(artifactPayload?.name || ""));
@@ -189,9 +181,7 @@ function buildDefaultActions(
           extensionFromName(String(meta?.metadata_json?.filename || "")) ||
           extensionFromName(String(meta?.metadata_json?.name || "")) ||
           extensionFromName(String(meta?.uri || "")) ||
-          extensionFromContentType(
-            String(meta?.mime_type || meta?.content_type || ""),
-          );
+          extensionFromContentType(String(meta?.mime_type || meta?.content_type || ""));
         if (fromMeta) return fromMeta;
       } catch {}
     }
@@ -249,9 +239,7 @@ function buildDefaultActions(
       response.headers.get("content-disposition"),
     );
     const headerExt = extensionFromName(headerName);
-    const typeExt = extensionFromContentType(
-      response.headers.get("content-type"),
-    );
+    const typeExt = extensionFromContentType(response.headers.get("content-type"));
     const fallbackExt = extensionFromName(fallbackName);
     const ext = headerExt || typeExt || fallbackExt;
 
@@ -304,23 +292,25 @@ function buildDefaultActions(
       icon: ExternalLink,
       source: "core",
       disabled: !hasArtifactId,
-      onSelect: ({ api: actionApi, artifactId: actionArtifactId, contentUrl: actionContentUrl, previewUrl: actionPreviewUrl, artifactType: actionArtifactType }) => {
+      onSelect: ({
+        api: actionApi,
+        artifactId: actionArtifactId,
+        artifactType: actionArtifactType,
+      }) => {
         if (!actionApi || !actionArtifactId) return;
         // Spawn MediaFrame directly via windows API (bypasses event bridge)
         if (actionApi.windows?.spawn) {
-          actionApi.windows.spawn(
-            "embeddr-core-media-frame",
-            "Media Frame",
-            {
-              initialItems: [{
+          actionApi.windows.spawn("embeddr-core-media-frame", "Media Frame", {
+            initialItems: [
+              {
                 artifactId: actionArtifactId,
                 id: actionArtifactId,
                 type: actionArtifactType || "image",
-              }],
-              initialMode: "replace",
-              initialSelectIndex: 0,
-            },
-          );
+              },
+            ],
+            initialMode: "replace",
+            initialSelectIndex: 0,
+          });
         } else {
           // Fallback to event emission
           actionApi.events?.emit?.("ui:display_media" as any, {
@@ -355,12 +345,7 @@ function buildDefaultActions(
         const apiKey = actionContext.api?.utils?.getApiKey?.() || null;
 
         try {
-          await downloadViaBlob(
-            downloadUrl,
-            fallbackName,
-            apiKey,
-            actionContext.artifactId,
-          );
+          await downloadViaBlob(downloadUrl, fallbackName, apiKey, actionContext.artifactId);
           actionContext.api?.toast.info("Download started");
         } catch {
           triggerBrowserDownload(downloadUrl, fallbackName);
@@ -387,11 +372,7 @@ function buildDefaultActions(
       icon: Copy,
       source: "core",
       disabled: !resolvedUrl,
-      onSelect: async ({
-        api: actionApi,
-        contentUrl: actionContentUrl,
-        src: actionSrc,
-      }) => {
+      onSelect: async ({ api: actionApi, contentUrl: actionContentUrl, src: actionSrc }) => {
         const copyValue = actionContentUrl || actionSrc;
         if (!copyValue) return;
         await navigator.clipboard.writeText(copyValue);
@@ -401,9 +382,7 @@ function buildDefaultActions(
   ];
 }
 
-function buildPluginActions(
-  context: ArtifactContextMenuContext,
-): Array<ArtifactContextMenuAction> {
+function buildPluginActions(context: ArtifactContextMenuContext): Array<ArtifactContextMenuAction> {
   const { api } = context;
   const pluginActions = api?.plugins?.getActions?.("image-context-menu") || [];
 
@@ -419,8 +398,7 @@ function buildPluginActions(
         source: "plugin" as const,
         icon: def?.icon,
         onSelect: (actionContext: ArtifactContextMenuContext) => {
-          const pluginApi =
-            actionContext.api?.plugins?.getApi?.(pluginId) || actionContext.api;
+          const pluginApi = actionContext.api?.plugins?.getApi?.(pluginId) || actionContext.api;
           const handler = def?.handler;
           if (typeof handler === "function") {
             handler(pluginApi, {
@@ -435,7 +413,7 @@ function buildPluginActions(
             });
           }
         },
-      } as ArtifactContextMenuAction;
+      };
     })
     .filter(Boolean) as Array<ArtifactContextMenuAction>;
 }
@@ -462,7 +440,7 @@ function orderActions(
 }
 
 // Type action registry — shared via globalThis across UMD boundaries
-function getTypeActions(typeName: string): any[] {
+function getTypeActions(typeName: string): Array<any> {
   const reg = (globalThis as any).__embeddrTypeActions || [];
   return reg.filter((a: any) => {
     if (a.type === typeName) return true;
@@ -495,7 +473,9 @@ function resolveMenuActions({
   // over artifactType (media type like "video")
   const artifactType = context.artifactPayload?.type_name || context.artifactType || "";
   const typeActions = artifactType ? getTypeActions(artifactType) : [];
-  const replacedIds = new Set(typeActions.filter((ta: any) => ta.replaces).map((ta: any) => ta.replaces));
+  const replacedIds = new Set(
+    typeActions.filter((ta: any) => ta.replaces).map((ta: any) => ta.replaces),
+  );
   const withoutReplaced = withPlugins.filter((a) => !replacedIds.has(a.id));
   const typeActionEntries = typeActions.map((ta: any) => ({
     id: ta.id,
@@ -511,9 +491,7 @@ function resolveMenuActions({
   }));
 
   const merged = [...withoutReplaced, ...typeActionEntries, ...(actions || [])];
-  const resolved = resolveActions
-    ? resolveActions({ defaults: merged, context })
-    : merged;
+  const resolved = resolveActions ? resolveActions({ defaults: merged, context }) : merged;
 
   const hidden = toIdSet(settings.hiddenActionIds);
   const forcedDisabled = toIdSet(settings.disabledActionIds);
@@ -561,9 +539,7 @@ export function ArtifactContextMenu({
           const Icon = action.icon;
           return (
             <React.Fragment key={action.id}>
-              {action.separatorBefore && idx > 0 ? (
-                <ContextMenuSeparator />
-              ) : null}
+              {action.separatorBefore && idx > 0 ? <ContextMenuSeparator /> : null}
               <ContextMenuItem
                 disabled={action.disabled}
                 onClick={async () => {
@@ -571,10 +547,7 @@ export function ArtifactContextMenu({
                     await action.onSelect(context);
                   } catch (error) {
                     context.api?.toast.error("Action failed");
-                    console.error(
-                      `[ArtifactContextMenu] action failed: ${action.id}`,
-                      error,
-                    );
+                    console.error(`[ArtifactContextMenu] action failed: ${action.id}`, error);
                   }
                 }}
               >

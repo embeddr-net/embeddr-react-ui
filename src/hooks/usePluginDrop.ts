@@ -77,8 +77,7 @@ export function usePluginDrop({
 
       // 1. Check for ARTIFACT_ID (Granular fallback)
       const artifactId =
-        dt.getData(EmbeddrDnDTypes.ARTIFACT_ID) ||
-        dt.getData(EmbeddrDnDTypes.IMAGE_ID);
+        dt.getData(EmbeddrDnDTypes.ARTIFACT_ID) || dt.getData(EmbeddrDnDTypes.IMAGE_ID);
       if (artifactId && onArtifact) {
         const type = dt.getData(EmbeddrDnDTypes.ARTIFACT_TYPE) || "image";
         const previewUrl = dt.getData(EmbeddrDnDTypes.PREVIEW_URL);

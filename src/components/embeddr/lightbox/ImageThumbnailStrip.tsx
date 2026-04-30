@@ -28,9 +28,7 @@ export const ImageThumbnailStrip = ({
   // Auto-scroll to current image
   useEffect(() => {
     if (isOpen && scrollContainerRef.current) {
-      const thumbnail = scrollContainerRef.current.children[
-        currentIndex
-      ] as HTMLElement;
+      const thumbnail = scrollContainerRef.current.children[currentIndex] as HTMLElement;
       thumbnail.scrollIntoView({
         behavior: "smooth",
         block: "nearest",

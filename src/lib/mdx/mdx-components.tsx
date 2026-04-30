@@ -1,12 +1,7 @@
 import React from "react";
 import { AlertTriangle, CheckCircle2, Info, Sparkles } from "lucide-react";
-import {
-  Progress,
-  Tabs,
-  TabsContent,
-  TabsList,
-  TabsTrigger,
-} from "@embeddr/react-ui";
+import { Progress } from "../../components/ui/progress";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "../../components/ui/tabs";
 import { Badge } from "../../components/ui/badge";
 import { Button } from "../../components/ui/button";
 import {
@@ -18,11 +13,7 @@ import {
 } from "../../components/ui/card";
 import { Separator } from "../../components/ui/separator";
 import { cn } from "../utils";
-import {
-  EmbeddrArtifact,
-  EmbeddrImage,
-  VideoPlayer,
-} from "../../components/embeddr";
+import { EmbeddrArtifact, EmbeddrImage, VideoPlayer } from "../../components/embeddr";
 import { resolveRenderable } from "../renderables";
 import { useOptionalEmbeddrAPI } from "../../context/EmbeddrContext";
 
@@ -74,23 +65,13 @@ type RenderableProps = {
   [key: string]: any;
 };
 
-export const Renderable = ({
-  item,
-  type,
-  url,
-  id,
-  ...rest
-}: RenderableProps) => {
+export const Renderable = ({ item, type, url, id, ...rest }: RenderableProps) => {
   const api = useOptionalEmbeddrAPI();
   const payload = item ?? { id, type, url, ...rest };
   const descriptor = resolveRenderable(payload, { api });
 
   if (!descriptor) {
-    return (
-      <div className="text-xs text-muted-foreground">
-        No renderable found for this item.
-      </div>
-    );
+    return <div className="text-xs text-muted-foreground">No renderable found for this item.</div>;
   }
 
   const Renderer = descriptor.render;
@@ -122,10 +103,7 @@ export const mdxComponents: Record<string, React.ComponentType<any>> = {
     <p {...props} className="text-sm text-foreground" />
   ),
   blockquote: (props: React.HTMLAttributes<HTMLQuoteElement>) => (
-    <blockquote
-      {...props}
-      className="border-l-2 border-primary/40 pl-4 text-muted-foreground"
-    />
+    <blockquote {...props} className="border-l-2 border-primary/40 pl-4 text-muted-foreground" />
   ),
   text: (props: React.HTMLAttributes<HTMLSpanElement>) => <span {...props} />,
   Text: (props: React.HTMLAttributes<HTMLSpanElement>) => <span {...props} />,
@@ -133,10 +111,7 @@ export const mdxComponents: Record<string, React.ComponentType<any>> = {
     <code {...props} className="rounded bg-secondary/40 px-1 py-0.5 text-xs" />
   ),
   pre: (props: React.HTMLAttributes<HTMLPreElement>) => (
-    <pre
-      {...props}
-      className="rounded-md bg-secondary/30 p-3 text-xs overflow-auto"
-    />
+    <pre {...props} className="rounded-md bg-secondary/30 p-3 text-xs overflow-auto" />
   ),
   ul: (props: React.HTMLAttributes<HTMLUListElement>) => (
     <ul {...props} className="list-disc pl-5" />

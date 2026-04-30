@@ -19,12 +19,7 @@ export interface ComparisonSliderProps {
   apiKey?: string;
 }
 
-export function ComparisonSlider({
-  before,
-  after,
-  className,
-  apiKey,
-}: ComparisonSliderProps) {
+export function ComparisonSlider({ before, after, className, apiKey }: ComparisonSliderProps) {
   const [isDragging, setIsDragging] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
   const handleRef = useRef<HTMLDivElement>(null);
@@ -85,14 +80,8 @@ export function ComparisonSlider({
     };
   }, [isDragging]);
 
-  const signedBefore = useMemo(
-    () => appendApiKeyToUrl(before, apiKey),
-    [before, apiKey],
-  );
-  const signedAfter = useMemo(
-    () => appendApiKeyToUrl(after, apiKey),
-    [after, apiKey],
-  );
+  const signedBefore = useMemo(() => appendApiKeyToUrl(before, apiKey), [before, apiKey]);
+  const signedAfter = useMemo(() => appendApiKeyToUrl(after, apiKey), [after, apiKey]);
 
   return (
     <div

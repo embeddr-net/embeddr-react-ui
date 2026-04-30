@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { RotateCcw, RotateCw } from "lucide-react";
-import { Button } from "@embeddr/react-ui/components/ui";
+import { Button } from "../../ui";
 import type { ReactNode } from "react";
 
 export interface PannableImageAction {
@@ -74,17 +74,13 @@ export const PannableImage = ({
     const isRotated = (r / 90) % 2 !== 0;
 
     // Handle video dimensions
-    const naturalWidth =
-      img instanceof HTMLVideoElement ? img.videoWidth : img.width;
-    const naturalHeight =
-      img instanceof HTMLVideoElement ? img.videoHeight : img.height;
+    const naturalWidth = img instanceof HTMLVideoElement ? img.videoWidth : img.width;
+    const naturalHeight = img instanceof HTMLVideoElement ? img.videoHeight : img.height;
 
     if (!naturalWidth || !naturalHeight) return;
 
     const canvasAspect = canvas.width / canvas.height;
-    const imageAspect = isRotated
-      ? naturalHeight / naturalWidth
-      : naturalWidth / naturalHeight;
+    const imageAspect = isRotated ? naturalHeight / naturalWidth : naturalWidth / naturalHeight;
 
     let fitWidth = canvas.width;
     let fitHeight = canvas.height;
@@ -336,10 +332,7 @@ export const PannableImage = ({
         const t1 = e.touches[0];
         const t2 = e.touches[1];
         if (!t1 || !t2) return;
-        const dist = Math.hypot(
-          t1.clientX - t2.clientX,
-          t1.clientY - t2.clientY,
-        );
+        const dist = Math.hypot(t1.clientX - t2.clientX, t1.clientY - t2.clientY);
 
         const scale = dist / touchState.initialDistance;
         setZoom(Math.max(0.1, Math.min(10, touchState.initialZoom * scale)));
@@ -420,10 +413,7 @@ export const PannableImage = ({
   }, [handleWheel, handleTouchStart, handleTouchMove, handleTouchEnd]);
 
   return (
-    <div
-      ref={containerRef}
-      className={`${className} relative h-full w-full overflow-hidden`}
-    >
+    <div ref={containerRef} className={`${className} relative h-full w-full overflow-hidden`}>
       <canvas
         ref={canvasRef}
         onMouseDown={handleMouseDown}
@@ -502,16 +492,13 @@ export const PannableImage = ({
             <div className="absolute bottom-full right-0 mb-2 w-64 bg-background/95 backdrop-blur-sm border border-border  p-3 text-xs text-muted-foreground shadow-lg rounded-md">
               <div className="space-y-1">
                 <div>
-                  <span className="text-foreground">Scroll/Pinch:</span> Zoom
-                  in/out
+                  <span className="text-foreground">Scroll/Pinch:</span> Zoom in/out
                 </div>
                 <div>
-                  <span className="text-foreground">Drag:</span> Pan around
-                  image
+                  <span className="text-foreground">Drag:</span> Pan around image
                 </div>
                 <div>
-                  <span className="text-foreground">Double-click:</span> Reset
-                  view
+                  <span className="text-foreground">Double-click:</span> Reset view
                 </div>
                 <div>
                   <span className="text-foreground">Escape:</span> Close dialog

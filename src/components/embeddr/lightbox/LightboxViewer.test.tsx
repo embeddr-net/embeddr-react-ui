@@ -5,9 +5,7 @@ import { LightboxViewer } from "./LightboxViewer";
 
 // Mock dependencies that might cause issues in JSDOM or are complex
 vi.mock("./PannableImage", () => ({
-  PannableImage: ({ src }: { src: string }) => (
-    <img data-testid="pannable-image" src={src} />
-  ),
+  PannableImage: ({ src }: { src: string }) => <img data-testid="pannable-image" src={src} />,
 }));
 
 vi.mock("./ImageThumbnailStrip", () => ({

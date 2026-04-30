@@ -5,11 +5,7 @@ export type PreviewMatch = {
   predicate?: (item: any) => boolean;
 };
 
-export type SourceBadgePosition =
-  | "top-left"
-  | "top-right"
-  | "bottom-left"
-  | "bottom-right";
+export type SourceBadgePosition = "top-left" | "top-right" | "bottom-left" | "bottom-right";
 
 export type PreviewPresentation = {
   imageClassName?: string;
@@ -32,29 +28,21 @@ const previewRegistry: Array<PreviewPresentationDescriptor> = [];
 
 const normalizeType = (value?: string) => String(value || "").toLowerCase();
 
-const matchesPreview = (
-  descriptor: PreviewPresentationDescriptor,
-  item: any,
-) => {
+const matchesPreview = (descriptor: PreviewPresentationDescriptor, item: any) => {
   if (!item) return false;
-const match = descriptor.match;
+  const match = descriptor.match;
   const itemType = normalizeType(item.type || item.kind || item.artifactType);
-  const artifactType = normalizeType(
-    item.artifactType || item.type || item.kind,
-  );
+  const artifactType = normalizeType(item.artifactType || item.type || item.kind);
   const itemUrl = String(item.url || item.uri || "");
 
   if (match.type && normalizeType(match.type) !== itemType) return false;
-  if (match.artifactType && normalizeType(match.artifactType) !== artifactType)
-    return false;
+  if (match.artifactType && normalizeType(match.artifactType) !== artifactType) return false;
   if (match.urlPrefix && !itemUrl.startsWith(match.urlPrefix)) return false;
   if (match.predicate && !match.predicate(item)) return false;
   return true;
 };
 
-export const registerPreviewPresentation = (
-  descriptor: PreviewPresentationDescriptor,
-) => {
+export const registerPreviewPresentation = (descriptor: PreviewPresentationDescriptor) => {
   if (!descriptor.id) return () => undefined;
   if (!previewRegistry.find((d) => d.id === descriptor.id)) {
     previewRegistry.push(descriptor);
@@ -65,13 +53,9 @@ export const registerPreviewPresentation = (
   };
 };
 
-export const resolvePreviewPresentation = (
-  item: any,
-): PreviewPresentation | undefined => {
+export const resolvePreviewPresentation = (item: any): PreviewPresentation | undefined => {
   if (!item) return undefined;
-  const sorted = [...previewRegistry].sort(
-    (a, b) => (b.priority ?? 0) - (a.priority ?? 0),
-  );
+  const sorted = [...previewRegistry].sort((a, b) => (b.priority ?? 0) - (a.priority ?? 0));
   for (const descriptor of sorted) {
     if (!matchesPreview(descriptor, item)) continue;
     const resolved = descriptor.resolve?.(item);
@@ -84,7 +68,5 @@ export const resolvePreviewPresentation = (
 };
 
 export const listPreviewPresentations = () => {
-  return [...previewRegistry].sort(
-    (a, b) => (b.priority ?? 0) - (a.priority ?? 0),
-  );
+  return [...previewRegistry].sort((a, b) => (b.priority ?? 0) - (a.priority ?? 0));
 };

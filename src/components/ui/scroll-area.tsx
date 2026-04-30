@@ -40,14 +40,12 @@ function ScrollArea({
         </ScrollAreaPrimitive.Viewport>
       </div>
 
-      {!hideScrollbars &&
-        (orientation === "vertical" || orientation === "both") && (
-          <ScrollBar variant={variant} orientation="vertical" />
-        )}
-      {!hideScrollbars &&
-        (orientation === "horizontal" || orientation === "both") && (
-          <ScrollBar variant={variant} orientation="horizontal" />
-        )}
+      {!hideScrollbars && (orientation === "vertical" || orientation === "both") && (
+        <ScrollBar variant={variant} orientation="vertical" />
+      )}
+      {!hideScrollbars && (orientation === "horizontal" || orientation === "both") && (
+        <ScrollBar variant={variant} orientation="horizontal" />
+      )}
       {!hideScrollbars && <ScrollAreaPrimitive.Corner />}
     </ScrollAreaPrimitive.Root>
   );

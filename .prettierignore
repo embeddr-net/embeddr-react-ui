@@ -1,6 +1,5 @@
-.archive
 dist
-build
-.vite
 coverage
+node_modules
 pnpm-lock.yaml
+.github

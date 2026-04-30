@@ -41,6 +41,4 @@ export interface ImageDialogContextType {
   setApiKey?: (key: string) => void;
 }
 
-export const ImageDialogContext = createContext<ImageDialogContextType | null>(
-  null,
-);
+export const ImageDialogContext = createContext<ImageDialogContextType | null>(null);

@@ -7,11 +7,7 @@ import { ExternalNavProvider } from "./ExternalNavProvider";
 // Helper component to trigger the hook
 const TestComponent = () => {
   const { openExternal } = useExternalNav();
-  return (
-    <button onClick={() => openExternal("https://example.com")}>
-      Open Link
-    </button>
-  );
+  return <button onClick={() => openExternal("https://example.com")}>Open Link</button>;
 };
 
 describe("ExternalNavProvider", () => {
@@ -56,11 +52,7 @@ describe("ExternalNavProvider", () => {
     // Click continue
     fireEvent.click(screen.getByText("Continue"));
 
-    expect(openSpy).toHaveBeenCalledWith(
-      "https://example.com",
-      "_blank",
-      "noopener,noreferrer",
-    );
+    expect(openSpy).toHaveBeenCalledWith("https://example.com", "_blank", "noopener,noreferrer");
 
     // Dialog should be closed (or closing)
     // Note: Radix Dialog might have animation delays, but checking for absence or visibility is good

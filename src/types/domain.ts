@@ -3,14 +3,7 @@ export interface PromptImage {
   url: string;
   image_url: string; // Added for compatibility
   thumb_url?: string; // Added for compatibility
-  media_type?:
-    | "image"
-    | "video"
-    | "audio"
-    | "text"
-    | "collection"
-    | "document"
-    | "web";
+  media_type?: "image" | "video" | "audio" | "text" | "collection" | "document" | "web";
   duration?: number;
   fps?: number;
   frame_count?: number;

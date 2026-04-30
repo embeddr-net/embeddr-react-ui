@@ -185,7 +185,16 @@ export function DraggablePanel({
 
   const onPositionChange = useCallback(
     (pos: { x: number; y: number }) => {
-      if ((window as any).__PANEL_DEBUG) console.log(`[panel:${id}] onPositionChange`, pos, isResizingRef.current ? `(resize:${resizeEdgeRef.current})` : isDraggingRef.current ? '(drag)' : '(external)');
+      if ((window as any).__PANEL_DEBUG)
+        console.log(
+          `[panel:${id}] onPositionChange`,
+          pos,
+          isResizingRef.current
+            ? `(resize:${resizeEdgeRef.current})`
+            : isDraggingRef.current
+              ? "(drag)"
+              : "(external)",
+        );
       if (controlledOnPositionChange) {
         controlledOnPositionChange(pos);
       } else {
@@ -196,7 +205,12 @@ export function DraggablePanel({
   );
 
   const onSizeChange = (s: { width: number; height: number }) => {
-    if ((window as any).__PANEL_DEBUG) console.log(`[panel:${id}] onSizeChange`, s, isResizingRef.current ? `(resize:${resizeEdgeRef.current})` : '(external)');
+    if ((window as any).__PANEL_DEBUG)
+      console.log(
+        `[panel:${id}] onSizeChange`,
+        s,
+        isResizingRef.current ? `(resize:${resizeEdgeRef.current})` : "(external)",
+      );
     if (controlledOnSizeChange) {
       controlledOnSizeChange(s);
     } else {
@@ -210,9 +224,7 @@ export function DraggablePanel({
     id ? `panel-${id}-folded` : "temp-panel-folded",
     false,
   );
-  const [internalTitlePosition, setInternalTitlePosition] = useLocalStorage<
-    "top" | "bottom"
-  >(
+  const [internalTitlePosition, setInternalTitlePosition] = useLocalStorage<"top" | "bottom">(
     id ? `panel-${id}-title-position` : "temp-panel-title-position",
     "top",
   );
@@ -223,9 +235,7 @@ export function DraggablePanel({
   const isFolded = controlledIsFolded ?? internalIsFolded;
   const titlePosition = controlledTitlePosition ?? internalTitlePosition;
 
-  const showTitle = hideHeader
-    ? false
-    : (controlledShowTitle ?? internalShowTitle);
+  const showTitle = hideHeader ? false : (controlledShowTitle ?? internalShowTitle);
 
   // Forced height in PanelHeader is h-[42px]
   const headerHeight = hideHeader || !showTitle ? 16 : 42;
@@ -304,19 +314,13 @@ export function DraggablePanel({
   }, [titlePosition]);
 
   useEffect(() => {
-    if (
-      controlledShowTitle !== undefined &&
-      internalShowTitle !== controlledShowTitle
-    ) {
+    if (controlledShowTitle !== undefined && internalShowTitle !== controlledShowTitle) {
       setInternalShowTitle(controlledShowTitle);
     }
   }, [controlledShowTitle, internalShowTitle, setInternalShowTitle]);
 
   useEffect(() => {
-    if (
-      controlledIsFolded !== undefined &&
-      internalIsFolded !== controlledIsFolded
-    ) {
+    if (controlledIsFolded !== undefined && internalIsFolded !== controlledIsFolded) {
       setInternalIsFolded(controlledIsFolded);
     }
   }, [controlledIsFolded, internalIsFolded, setInternalIsFolded]);
@@ -328,11 +332,7 @@ export function DraggablePanel({
     ) {
       setInternalTitlePosition(controlledTitlePosition);
     }
-  }, [
-    controlledTitlePosition,
-    internalTitlePosition,
-    setInternalTitlePosition,
-  ]);
+  }, [controlledTitlePosition, internalTitlePosition, setInternalTitlePosition]);
 
   const emitPanelDebug = useCallback(
     (phase: PanelDebugPhase, extra?: Record<string, unknown>) => {
@@ -426,11 +426,18 @@ export function DraggablePanel({
 
     // Only update if changed effectively to reduce render cycles
     const prev = anchorStateRef.current;
-    if (
-      Math.abs(prev.offsetX - newOffsetX) > 2 ||
-      Math.abs(prev.offsetY - newOffsetY) > 2
-    ) {
-      if ((window as any).__PANEL_DEBUG) console.log(`[panel:${id}] anchor-sync`, { anchorX, anchorY, oldOffsetX: prev.offsetX, newOffsetX, oldOffsetY: prev.offsetY, newOffsetY, pos: { x, y }, interacting: isInteractingRef.current });
+    if (Math.abs(prev.offsetX - newOffsetX) > 2 || Math.abs(prev.offsetY - newOffsetY) > 2) {
+      if ((window as any).__PANEL_DEBUG)
+        console.log(`[panel:${id}] anchor-sync`, {
+          anchorX,
+          anchorY,
+          oldOffsetX: prev.offsetX,
+          newOffsetX,
+          oldOffsetY: prev.offsetY,
+          newOffsetY,
+          pos: { x, y },
+          interacting: isInteractingRef.current,
+        });
       setAnchorState((p) => ({
         ...p,
         offsetX: newOffsetX,
@@ -481,14 +488,7 @@ export function DraggablePanel({
         y: Math.min(Math.max(0, position.y), innerHeight - headerHeight),
       });
     }
-  }, [
-    headerHeight,
-    isOpen,
-    isPositionControlled,
-    onPositionChange,
-    position,
-    size,
-  ]);
+  }, [headerHeight, isOpen, isPositionControlled, onPositionChange, position, size]);
 
   // ── helpers to start drag / resize from either mouse or touch ──
   const beginDrag = useCallback(
@@ -627,26 +627,14 @@ export function DraggablePanel({
         window.addEventListener("mouseup", handleInitialUp);
       }
     },
-    [
-      clearPendingStartListeners,
-      pinned,
-      onFocus,
-      onPositionChange,
-      id,
-      emitPanelDebug,
-      onDragEnd,
-    ],
+    [clearPendingStartListeners, pinned, onFocus, onPositionChange, id, emitPanelDebug, onDragEnd],
   );
 
   const handleMouseDown = useCallback(
     (e: React.MouseEvent) => {
       if (e.button !== 0) return;
       const target = e.target as HTMLElement;
-      if (
-        target.closest(
-          "button, input, textarea, select, .resize-handle, .no-drag",
-        )
-      ) {
+      if (target.closest("button, input, textarea, select, .resize-handle, .no-drag")) {
         return;
       }
       beginDrag(e.clientX, e.clientY, false);
@@ -657,11 +645,7 @@ export function DraggablePanel({
   const handleTouchStart = useCallback(
     (e: React.TouchEvent) => {
       const target = e.target as HTMLElement;
-      if (
-        target.closest(
-          "button, input, textarea, select, .resize-handle, .no-drag",
-        )
-      ) {
+      if (target.closest("button, input, textarea, select, .resize-handle, .no-drag")) {
         return;
       }
       const t = e.touches[0];
@@ -718,7 +702,13 @@ export function DraggablePanel({
   );
 
   const handleInteractionEnd = useCallback(() => {
-    if ((window as any).__PANEL_DEBUG) console.log(`[panel:${id}] handleInteractionEnd`, { pos: positionRef.current, size: sizeRef.current, wasResizing: isResizingRef.current, edge: resizeEdgeRef.current });
+    if ((window as any).__PANEL_DEBUG)
+      console.log(`[panel:${id}] handleInteractionEnd`, {
+        pos: positionRef.current,
+        size: sizeRef.current,
+        wasResizing: isResizingRef.current,
+        edge: resizeEdgeRef.current,
+      });
     const { innerWidth, innerHeight } = window;
     const { x, y } = positionRef.current;
 
@@ -852,11 +842,7 @@ export function DraggablePanel({
         isResizing,
         hasPendingStart: pendingStartCleanupRef.current !== null,
       });
-      if (
-        isDragging ||
-        isResizing ||
-        pendingStartCleanupRef.current !== null
-      ) {
+      if (isDragging || isResizing || pendingStartCleanupRef.current !== null) {
         forceCancelInteraction();
       } else {
         clearPendingStartListeners();
@@ -899,12 +885,21 @@ export function DraggablePanel({
         const ix = initialPosRef.current.x;
         const iy = initialPosRef.current.y;
 
-        let newW = iw, newH = ih, newX = ix, newY = iy;
+        let newW = iw,
+          newH = ih,
+          newX = ix,
+          newY = iy;
 
         if (edge.includes("e")) newW = iw + dx;
-        if (edge.includes("w")) { newW = iw - dx; newX = ix + dx; }
+        if (edge.includes("w")) {
+          newW = iw - dx;
+          newX = ix + dx;
+        }
         if (edge.includes("s")) newH = ih + dy;
-        if (edge.includes("n")) { newH = ih - dy; newY = iy + dy; }
+        if (edge.includes("n")) {
+          newH = ih - dy;
+          newY = iy + dy;
+        }
 
         // Clamp to minimums — pin position when hitting min
         if (newW < minWidth) {
@@ -974,8 +969,7 @@ export function DraggablePanel({
       setIsResizing(false);
     };
 
-    const handleMouseMove = (e: MouseEvent) =>
-      scheduleMove(e.clientX, e.clientY);
+    const handleMouseMove = (e: MouseEvent) => scheduleMove(e.clientX, e.clientY);
     const handleMouseUp = () => endInteraction();
     const handlePointerUp = () => endInteraction();
     const handlePointerCancel = () => endInteraction();
@@ -1048,7 +1042,15 @@ export function DraggablePanel({
     const dx = Math.abs(prev.x - position.x);
     const dy = Math.abs(prev.y - position.y);
     if (dx > 5 || dy > 5) {
-      console.warn(`[panel:${id}] POSITION JUMP`, { from: prev, to: position, dx, dy, isDragging, isResizing, controlled: !!controlledPosition });
+      console.warn(`[panel:${id}] POSITION JUMP`, {
+        from: prev,
+        to: position,
+        dx,
+        dy,
+        isDragging,
+        isResizing,
+        controlled: !!controlledPosition,
+      });
       console.trace();
     }
     prevRenderPosRef.current = position;
@@ -1143,8 +1145,7 @@ export function DraggablePanel({
         isActive ? "embeddr-panel-active" : "embeddr-panel-inactive",
         (isDragging || isResizing) && "embeddr-panel-interacting",
         (isDragging || isResizing) && "transition-none",
-        transparent &&
-          "bg-transparent border-none shadow-none backdrop-blur-none",
+        transparent && "bg-transparent border-none shadow-none backdrop-blur-none",
         titlePosition === "bottom" ? "flex-col-reverse" : "flex-col",
         className,
       )}
@@ -1156,8 +1157,7 @@ export function DraggablePanel({
         height: isFolded ? "auto" : size.height,
         zIndex: zIndex ?? 50,
         minHeight: isFolded && (!showTitle || hideHeader) ? "1rem" : undefined,
-        willChange:
-          isDragging || isResizing ? "transform,width,height" : "auto",
+        willChange: isDragging || isResizing ? "transform,width,height" : "auto",
         contain: "layout paint style",
         backfaceVisibility: "hidden",
       }}
@@ -1188,9 +1188,7 @@ export function DraggablePanel({
         if (!isFolded) return;
         const target = event.target as HTMLElement;
         if (
-          target.closest(
-            "button, input, textarea, select, [role='menuitem'], [data-slot='button']",
-          )
+          target.closest("button, input, textarea, select, [role='menuitem'], [data-slot='button']")
         ) {
           return;
         }
@@ -1240,9 +1238,7 @@ export function DraggablePanel({
             event.stopPropagation();
           }}
         >
-          <PanelContext.Provider value={contextValue}>
-            {children}
-          </PanelContext.Provider>
+          <PanelContext.Provider value={contextValue}>{children}</PanelContext.Provider>
         </div>
       )}
 
@@ -1277,19 +1273,21 @@ export function DraggablePanel({
                   if (dot) dot.style.opacity = "0";
                 }}
               >
-                <div style={{
-                  position: "absolute",
-                  top: "50%",
-                  left: "50%",
-                  transform: "translate(-50%, -50%)",
-                  width: 5,
-                  height: 5,
-                  borderRadius: "50%",
-                  background: "currentColor",
-                  opacity: 0,
-                  transition: "opacity 0.15s",
-                  pointerEvents: "none",
-                }} />
+                <div
+                  style={{
+                    position: "absolute",
+                    top: "50%",
+                    left: "50%",
+                    transform: "translate(-50%, -50%)",
+                    width: 5,
+                    height: 5,
+                    borderRadius: "50%",
+                    background: "currentColor",
+                    opacity: 0,
+                    transition: "opacity 0.15s",
+                    pointerEvents: "none",
+                  }}
+                />
               </div>
             );
           })}
@@ -1331,19 +1329,21 @@ export function DraggablePanel({
                   if (line) line.style.opacity = "0";
                 }}
               >
-                <div style={{
-                  position: "absolute",
-                  top: "50%",
-                  left: "50%",
-                  transform: "translate(-50%, -50%)",
-                  width: isH ? 22 : 3,
-                  height: isH ? 3 : 22,
-                  borderRadius: 2,
-                  background: "currentColor",
-                  opacity: 0,
-                  transition: "opacity 0.15s",
-                  pointerEvents: "none",
-                }} />
+                <div
+                  style={{
+                    position: "absolute",
+                    top: "50%",
+                    left: "50%",
+                    transform: "translate(-50%, -50%)",
+                    width: isH ? 22 : 3,
+                    height: isH ? 3 : 22,
+                    borderRadius: 2,
+                    background: "currentColor",
+                    opacity: 0,
+                    transition: "opacity 0.15s",
+                    pointerEvents: "none",
+                  }}
+                />
               </div>
             );
           })}

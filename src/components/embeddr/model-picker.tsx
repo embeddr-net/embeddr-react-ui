@@ -13,27 +13,10 @@
  *     fallbackOptions={[{ value: "yolov8n.pt", label: "YOLOv8n" }]}
  *   />
  */
-import {
-  forwardRef,
-  useCallback,
-  useEffect,
-  useMemo,
-  useState,
-} from "react";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "../ui/select";
+import { forwardRef, useCallback, useEffect, useMemo, useState } from "react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
 import { Badge } from "../ui/badge";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "../ui/tooltip";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "../ui/tooltip";
 import { Spinner } from "../ui/spinner";
 import { cn } from "../../lib/utils";
 
@@ -169,12 +152,8 @@ const ModelPicker = forwardRef<HTMLDivElement, ModelPickerProps>(
           let result: Array<ModelInfo> = res.models;
 
           if (providerFilter) {
-            const providers = Array.isArray(providerFilter)
-              ? providerFilter
-              : [providerFilter];
-            result = result.filter(
-              (m) => !m.provider || providers.includes(m.provider),
-            );
+            const providers = Array.isArray(providerFilter) ? providerFilter : [providerFilter];
+            result = result.filter((m) => !m.provider || providers.includes(m.provider));
           }
 
           setModels(result);
@@ -263,9 +242,7 @@ const ModelPicker = forwardRef<HTMLDivElement, ModelPickerProps>(
 
     const handleChange = useCallback(
       (newValue: string) => {
-        const found = models.find(
-          (m) => m.model_id === newValue || m.repo_id === newValue,
-        );
+        const found = models.find((m) => m.model_id === newValue || m.repo_id === newValue);
         onSelect?.(newValue, found || undefined);
       },
       [onSelect, models],
@@ -279,9 +256,7 @@ const ModelPicker = forwardRef<HTMLDivElement, ModelPickerProps>(
       <div ref={ref} className={cn("space-y-1 min-w-0 max-w-full", className)}>
         {label && (
           <div className="flex items-center gap-1.5">
-            <label className="text-[10px] text-muted-foreground font-medium">
-              {label}
-            </label>
+            <label className="text-[10px] text-muted-foreground font-medium">{label}</label>
             {logoUrl && models.length > 0 && (
               <TooltipProvider delayDuration={200}>
                 <Tooltip>
@@ -312,9 +287,7 @@ const ModelPicker = forwardRef<HTMLDivElement, ModelPickerProps>(
                 <span
                   className={cn(
                     "h-1.5 w-1.5 rounded-full shrink-0",
-                    selectedOption.loaded
-                      ? "bg-emerald-400"
-                      : "bg-muted-foreground/40",
+                    selectedOption.loaded ? "bg-emerald-400" : "bg-muted-foreground/40",
                   )}
                 />
               )}
@@ -349,9 +322,7 @@ const ModelPicker = forwardRef<HTMLDivElement, ModelPickerProps>(
                       <span
                         className={cn(
                           "h-1.5 w-1.5 rounded-full shrink-0",
-                          opt.loaded
-                            ? "bg-emerald-400"
-                            : "bg-muted-foreground/40",
+                          opt.loaded ? "bg-emerald-400" : "bg-muted-foreground/40",
                         )}
                       />
                     )}
@@ -378,16 +349,11 @@ const ModelPicker = forwardRef<HTMLDivElement, ModelPickerProps>(
                       )}
 
                       {opt.sizeStr && !opt.loaded && (
-                        <span className="text-[9px] text-muted-foreground/60">
-                          {opt.sizeStr}
-                        </span>
+                        <span className="text-[9px] text-muted-foreground/60">{opt.sizeStr}</span>
                       )}
 
                       {opt.provider && opt.provider !== ownProvider && (
-                        <Badge
-                          variant="outline"
-                          className="text-[8px] h-3.5 px-1 py-0"
-                        >
+                        <Badge variant="outline" className="text-[8px] h-3.5 px-1 py-0">
                           {opt.provider.replace("embeddr-", "")}
                         </Badge>
                       )}

@@ -7,9 +7,7 @@ export const EmbeddrProvider: React.FC<{
   api: EmbeddrAPI;
   children: React.ReactNode;
 }> = ({ api, children }) => {
-  return (
-    <EmbeddrContext.Provider value={api}>{children}</EmbeddrContext.Provider>
-  );
+  return <EmbeddrContext.Provider value={api}>{children}</EmbeddrContext.Provider>;
 };
 
 export const useEmbeddrAPI = (): EmbeddrAPI => {

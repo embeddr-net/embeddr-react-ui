@@ -17,10 +17,7 @@ export const resolveBackendOrigin = (backendUrl?: string | null) => {
   return clean;
 };
 
-export const resolveRelativeToBackend = (
-  url?: string | null,
-  backendUrl?: string | null,
-) => {
+export const resolveRelativeToBackend = (url?: string | null, backendUrl?: string | null) => {
   const value = String(url || "").trim();
   if (!value) return "";
   if (value.startsWith("http://") || value.startsWith("https://")) return value;

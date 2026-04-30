@@ -3,12 +3,8 @@ import { EmbeddrDnDTypes } from "../../lib/dnd";
 import { cn } from "../../lib/utils";
 import { resolveApiBaseUrl } from "../../lib/url";
 import { useOptionalEmbeddrAPI } from "../../context/EmbeddrContext";
-import {
-  ArtifactContextMenu
-  
-  
-} from "./ArtifactContextMenu";
-import type {ArtifactContextMenuAction, ArtifactContextMenuContext} from "./ArtifactContextMenu";
+import { ArtifactContextMenu } from "./ArtifactContextMenu";
+import type { ArtifactContextMenuAction, ArtifactContextMenuContext } from "./ArtifactContextMenu";
 
 export interface EmbeddrImageProps extends React.ImgHTMLAttributes<HTMLImageElement> {
   api?: any; // Optional API object (takes precedence over context)
@@ -28,10 +24,7 @@ export interface EmbeddrImageProps extends React.ImgHTMLAttributes<HTMLImageElem
   }) => Array<ArtifactContextMenuAction>;
 }
 
-export const EmbeddrImage = React.forwardRef<
-  HTMLImageElement,
-  EmbeddrImageProps
->(
+export const EmbeddrImage = React.forwardRef<HTMLImageElement, EmbeddrImageProps>(
   (
     {
       api: apiProp,

@@ -36,17 +36,12 @@ export function usePanelStack(
     (id: string, options?: PanelZIndexOptions) => {
       const orderIndex = panelOrder.indexOf(id);
       const baseOrder = orderIndex === -1 ? 0 : orderIndex;
-      return options?.pinned
-        ? pinnedZIndex + baseOrder
-        : baseZIndex + baseOrder;
+      return options?.pinned ? pinnedZIndex + baseOrder : baseZIndex + baseOrder;
     },
     [baseZIndex, panelOrder, pinnedZIndex],
   );
 
-  const isActive = React.useCallback(
-    (id: string) => activeId === id,
-    [activeId],
-  );
+  const isActive = React.useCallback((id: string) => activeId === id, [activeId]);
 
   return {
     panelOrder,

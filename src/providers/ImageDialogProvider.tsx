@@ -1,17 +1,9 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { VisuallyHidden } from "@radix-ui/react-visually-hidden";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogTitle,
-} from "../components/ui";
+import { Dialog, DialogContent, DialogDescription, DialogTitle } from "../components/ui";
 import { LightboxViewer } from "../components/embeddr/lightbox";
 import { ImageDialogContext } from "../context/ImageDialogContext";
-import type {
-  GalleryWithTotal,
-  ImageDialogOpenContext,
-} from "../context/ImageDialogContext";
+import type { GalleryWithTotal, ImageDialogOpenContext } from "../context/ImageDialogContext";
 import type { ReactNode } from "react";
 import type { Gallery, GalleryImage, ImageAction } from "../types/gallery";
 
@@ -21,9 +13,7 @@ export const ImageDialogProvider = ({ children }: { children: ReactNode }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [imageSrc, setImageSrc] = useState<string | null>(null);
   const [galleries, setGalleries] = useState<Array<Gallery>>([]);
-  const [currentGallery, setCurrentGallery] = useState<GalleryWithTotal | null>(
-    null,
-  );
+  const [currentGallery, setCurrentGallery] = useState<GalleryWithTotal | null>(null);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [pendingIndex, setPendingIndex] = useState<number | null>(null);
   const [actions, setActions] = useState<Array<ImageAction>>([]);
@@ -66,8 +56,7 @@ export const ImageDialogProvider = ({ children }: { children: ReactNode }) => {
             name: galleryOrMetadata.name || "Image Viewer",
             thumbnail: galleryOrMetadata.thumbnail || src,
             images: galleryOrMetadata.images,
-            totalImages:
-              galleryOrMetadata.totalImages || galleryOrMetadata.images.length,
+            totalImages: galleryOrMetadata.totalImages || galleryOrMetadata.images.length,
             fetchMore: galleryOrMetadata.fetchMore,
           }
         : {
@@ -187,22 +176,13 @@ export const ImageDialogProvider = ({ children }: { children: ReactNode }) => {
 
   // Update imageSrc when pending index becomes available
   useEffect(() => {
-    if (
-      pendingIndex !== null &&
-      currentGallery &&
-      pendingIndex < currentGallery.images.length
-    ) {
+    if (pendingIndex !== null && currentGallery && pendingIndex < currentGallery.images.length) {
       onImageChangeUnified(pendingIndex);
     }
   }, [currentGallery?.images.length, pendingIndex]);
 
   const setGalleryImages = useCallback(
-    (
-      images: Array<GalleryImage>,
-      replace = true,
-      newIndex?: number,
-      totalImages?: number,
-    ) => {
+    (images: Array<GalleryImage>, replace = true, newIndex?: number, totalImages?: number) => {
       setCurrentGallery((prev) => {
         if (!prev) return null;
         const newImages = replace ? images : [...prev.images, ...images];
@@ -254,9 +234,7 @@ export const ImageDialogProvider = ({ children }: { children: ReactNode }) => {
         >
           <VisuallyHidden>
             <DialogTitle>Image Viewer</DialogTitle>
-            <DialogDescription>
-              View images in a lightbox gallery.
-            </DialogDescription>
+            <DialogDescription>View images in a lightbox gallery.</DialogDescription>
           </VisuallyHidden>
           <LightboxViewer
             apiKey={apiKey}

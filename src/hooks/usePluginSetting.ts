@@ -3,11 +3,7 @@ import { useEffect, useState } from "react";
 const SETTINGS_STORE_KEY = "embeddr-client-settings";
 const LEGACY_PLUGIN_SETTINGS_KEY = "zen-plugin-settings";
 
-const readPluginSetting = <T>(
-  pluginId: string,
-  key: string,
-  defaultValue: T,
-): T => {
+const readPluginSetting = <T>(pluginId: string, key: string, defaultValue: T): T => {
   try {
     const storeRaw = localStorage.getItem(SETTINGS_STORE_KEY);
     if (storeRaw) {
@@ -31,14 +27,8 @@ const readPluginSetting = <T>(
 };
 
 // Helper hook to read plugin settings
-export const usePluginSetting = <T>(
-  pluginId: string,
-  key: string,
-  defaultValue: T,
-): T => {
-  const [value, setValue] = useState<T>(() =>
-    readPluginSetting(pluginId, key, defaultValue),
-  );
+export const usePluginSetting = <T>(pluginId: string, key: string, defaultValue: T): T => {
+  const [value, setValue] = useState<T>(() => readPluginSetting(pluginId, key, defaultValue));
 
   useEffect(() => {
     const handleStorage = () => {

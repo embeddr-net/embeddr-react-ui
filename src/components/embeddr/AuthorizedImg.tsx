@@ -17,9 +17,7 @@ export function AuthorizedImg({
   // Use Proxy strategy if we have an API key and it's an HTTP URL
   // This bypasses CORS and sends the API key from the backend side
   const proxySrc =
-    apiKey && src.startsWith("http")
-      ? `/embeddr/proxy?url=${encodeURIComponent(src)}`
-      : src;
+    apiKey && src.startsWith("http") ? `/embeddr/proxy?url=${encodeURIComponent(src)}` : src;
 
   return (
     <img

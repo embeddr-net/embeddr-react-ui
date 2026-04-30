@@ -13,13 +13,8 @@ type MdxRendererProps = {
   components?: Record<string, React.ComponentType<any>>;
 };
 
-export function MdxRenderer({
-  source,
-  className,
-  components,
-}: MdxRendererProps) {
-  const [Component, setComponent] =
-    React.useState<React.ComponentType<any> | null>(null);
+export function MdxRenderer({ source, className, components }: MdxRendererProps) {
+  const [Component, setComponent] = React.useState<React.ComponentType<any> | null>(null);
   const [error, setError] = React.useState<string | null>(null);
   const [isLoading, setIsLoading] = React.useState(false);
 
@@ -69,9 +64,7 @@ export function MdxRenderer({
   }, [source]);
 
   if (!source.trim()) {
-    return (
-      <div className="text-sm text-muted-foreground">No MDX content yet.</div>
-    );
+    return <div className="text-sm text-muted-foreground">No MDX content yet.</div>;
   }
 
   if (isLoading) {

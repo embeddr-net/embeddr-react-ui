@@ -37,12 +37,7 @@ export function MediaCanvas({
   };
 
   return (
-    <div
-      className={cn(
-        "w-full h-full relative overflow-hidden bg-muted/20",
-        className,
-      )}
-    >
+    <div className={cn("w-full h-full relative overflow-hidden bg-muted/20", className)}>
       {mode === "single" &&
         (isVideo(primaryImage) ? (
           <PannableVideo

@@ -43,11 +43,7 @@ const PointCloud = ({
 }: {
   points: Array<Point3D>;
   onHover: (index: number | null, point: Point3D | null) => void;
-  onClick: (
-    index: number,
-    point: Point3D,
-    event: ThreeEvent<MouseEvent>,
-  ) => void;
+  onClick: (index: number, point: Point3D, event: ThreeEvent<MouseEvent>) => void;
   size?: number;
   opacity?: number;
 }) => {
@@ -147,13 +143,7 @@ const PointCloud = ({
           args={[colors, 3]}
         />
       </bufferGeometry>
-      <pointsMaterial
-        size={size}
-        vertexColors
-        sizeAttenuation
-        transparent
-        opacity={opacity}
-      />
+      <pointsMaterial size={size} vertexColors sizeAttenuation transparent opacity={opacity} />
     </points>
   );
 };
@@ -227,12 +217,7 @@ const ImageSprite = ({
         onClick?.(point);
       }}
     >
-      <spriteMaterial
-        map={texture}
-        transparent={true}
-        opacity={1.0}
-        alphaTest={0.1}
-      />
+      <spriteMaterial map={texture} transparent={true} opacity={1.0} alphaTest={0.1} />
     </sprite>
   );
 };
@@ -255,12 +240,7 @@ const ImageNodes = ({
       if (ap.isMarker || ap.isQuery) return false;
 
       // Get type from various possible locations
-      const type = (
-        ap.artifact_type ||
-        ap.type ||
-        ap.metadata?.type ||
-        ""
-      ).toLowerCase();
+      const type = (ap.artifact_type || ap.type || ap.metadata?.type || "").toLowerCase();
 
       // Explicitly block non-visual types
       if (
@@ -294,13 +274,7 @@ const ImageNodes = ({
   );
 };
 
-const HighlightPoint = ({
-  point,
-  size = 0.15,
-}: {
-  point: Point3D | null;
-  size?: number;
-}) => {
+const HighlightPoint = ({ point, size = 0.15 }: { point: Point3D | null; size?: number }) => {
   if (!point) return null;
   const pos = getCoordinates(point);
   const highlightColor = point.color || "#ffffff";
@@ -391,8 +365,7 @@ const CameraController = ({
     const handleKeyDown = (e: KeyboardEvent) => {
       if (isActive) setKeys((k) => ({ ...k, [e.code]: true }));
     };
-    const handleKeyUp = (e: KeyboardEvent) =>
-      setKeys((k) => ({ ...k, [e.code]: false }));
+    const handleKeyUp = (e: KeyboardEvent) => setKeys((k) => ({ ...k, [e.code]: false }));
     window.addEventListener("keydown", handleKeyDown);
     window.addEventListener("keyup", handleKeyUp);
     return () => {
@@ -554,12 +527,7 @@ const ConnectionLines = ({
               args={[lines.colors, 3]}
             />
           </bufferGeometry>
-          <lineBasicMaterial
-            vertexColors
-            transparent
-            opacity={0.4}
-            linewidth={1}
-          />
+          <lineBasicMaterial vertexColors transparent opacity={0.4} linewidth={1} />
         </lineSegments>
       )}
 
@@ -576,12 +544,7 @@ const ConnectionLines = ({
             />
           </bufferGeometry>
           {/* Note: lineWidth doesn't always work in WebGL, but we can try opacity/color pop */}
-          <lineBasicMaterial
-            color="white"
-            opacity={1.0}
-            linewidth={3}
-            depthTest={false}
-          />
+          <lineBasicMaterial color="white" opacity={1.0} linewidth={3} depthTest={false} />
         </lineSegments>
       )}
     </group>
@@ -649,8 +612,7 @@ export const Umap3DExplorer = ({
     // 2. Handle initial/dramatic centroid re-centering
     const isInitial = lastPointsLengthRef.current === 0;
     const isMajorShift =
-      Math.abs(points.length - lastPointsLengthRef.current) >
-      lastPointsLengthRef.current * 0.4;
+      Math.abs(points.length - lastPointsLengthRef.current) > lastPointsLengthRef.current * 0.4;
 
     if (isInitial || isMajorShift) {
       let sumX = 0,
@@ -666,13 +628,7 @@ export const Umap3DExplorer = ({
       }
 
       if (validCount > 0) {
-        setCameraTarget(
-          new THREE.Vector3(
-            sumX / validCount,
-            sumY / validCount,
-            sumZ / validCount,
-          ),
-        );
+        setCameraTarget(new THREE.Vector3(sumX / validCount, sumY / validCount, sumZ / validCount));
       }
     }
 
@@ -681,11 +637,7 @@ export const Umap3DExplorer = ({
 
   const controlsRef = useRef<any>(null);
 
-  const handlePointClick = (
-    index: number,
-    point: Point3D,
-    event?: ThreeEvent<MouseEvent>,
-  ) => {
+  const handlePointClick = (index: number, point: Point3D, event?: ThreeEvent<MouseEvent>) => {
     // Normal click: Select point (CameraController will lerp smoothly)
     setSelectedIndices([index]);
     if (onPointSelect) onPointSelect(point);
@@ -714,9 +666,7 @@ export const Umap3DExplorer = ({
     return (
       <div className="h-full w-full flex items-center justify-center flex-col gap-4">
         <Loader2 className="w-8 h-8 text-primary animate-spin" />
-        <p className="text-muted-foreground animate-pulse">
-          Loading 3D Point Cloud...
-        </p>
+        <p className="text-muted-foreground animate-pulse">Loading 3D Point Cloud...</p>
       </div>
     );
   }
@@ -737,16 +687,12 @@ export const Umap3DExplorer = ({
     );
   }
 
-  const selectedIndex =
-    selectedIndices.length === 1 ? selectedIndices[0] : undefined;
-  const selectedPoint =
-    selectedIndex !== undefined ? points[selectedIndex] : undefined;
+  const selectedIndex = selectedIndices.length === 1 ? selectedIndices[0] : undefined;
+  const selectedPoint = selectedIndex !== undefined ? points[selectedIndex] : undefined;
 
   return (
     <div
-      className={`w-full h-full flex flex-col bg-card relative overflow-hidden ${
-        className || ""
-      }`}
+      className={`w-full h-full flex flex-col bg-card relative overflow-hidden ${className || ""}`}
     >
       <Canvas
         camera={{ position: [0, 0, 15], fov: 60 }}
@@ -797,11 +743,7 @@ export const Umap3DExplorer = ({
         {!showImages && (
           <>
             <HighlightPoint point={hoveredPoint} size={pointSize} />
-            <SelectedPoints
-              points={points}
-              selectedIndices={selectedIndices}
-              size={pointSize}
-            />
+            <SelectedPoints points={points} selectedIndices={selectedIndices} size={pointSize} />
           </>
         )}
         <ConnectionLines
@@ -816,8 +758,7 @@ export const Umap3DExplorer = ({
 
       <div className="absolute top-4 left-4 flex gap-2 pointer-events-none">
         <div className="bg-card/80 backdrop-blur text-foreground px-3 py-1 text-xs border border-border rounded flex items-center h-8">
-          {count ? count.toLocaleString() : points.length.toLocaleString()}{" "}
-          points
+          {count ? count.toLocaleString() : points.length.toLocaleString()} points
         </div>
       </div>
 
@@ -827,11 +768,7 @@ export const Umap3DExplorer = ({
           size="sm"
           className="h-8 gap-2"
           onClick={() => setShowImages((prev) => !prev)}
-          title={
-            canShowImages
-              ? "Toggle image thumbnails"
-              : "Too many points to show images"
-          }
+          title={canShowImages ? "Toggle image thumbnails" : "Too many points to show images"}
           disabled={!canShowImages}
         >
           <ImageIcon className="w-4 h-4" />
@@ -949,9 +886,7 @@ export const Umap3DExplorer = ({
       {selectedIndices.length > 1 && (
         <div className="absolute bottom-4 left-4 z-10 bg-card border border-border overflow-hidden shadow-lg w-96 max-h-[50vh] flex flex-col rounded">
           <div className="p-2 bg-muted border-b border-border flex items-center justify-between">
-            <span className="text-sm font-medium">
-              {selectedIndices.length} selected
-            </span>
+            <span className="text-sm font-medium">{selectedIndices.length} selected</span>
             <Button
               onClick={() => setSelectedIndices([])}
               variant="ghost"
@@ -991,8 +926,8 @@ export const Umap3DExplorer = ({
 
       <div className="absolute bottom-4 right-4 pointer-events-none max-w-sm text-right">
         <div className="text-muted-foreground text-[10px] bg-card/80 backdrop-blur px-2 py-1 border border-border rounded">
-          Left Click: Select • Ctrl+Click: Center & Select • Right Click: Pan •
-          Scroll: Zoom • WASD/QE: Move
+          Left Click: Select • Ctrl+Click: Center & Select • Right Click: Pan • Scroll: Zoom •
+          WASD/QE: Move
         </div>
       </div>
     </div>

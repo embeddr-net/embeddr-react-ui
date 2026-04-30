@@ -91,20 +91,13 @@ export const matchReactiveMessage = (msg: any, config?: ReactiveConfig) => {
   if (sources.length > 0 && !sources.includes(msg.source)) {
     return false;
   }
-  if (
-    config.types &&
-    config.types.length > 0 &&
-    !config.types.includes(msg.type)
-  ) {
+  if (config.types && config.types.length > 0 && !config.types.includes(msg.type)) {
     return false;
   }
   return true;
 };
 
-export const extractReactiveArtifactId = (
-  msg: any,
-  config?: ReactiveConfig,
-) => {
+export const extractReactiveArtifactId = (msg: any, config?: ReactiveConfig) => {
   if (!config) return undefined;
   return extractFirst(msg, config.artifactIdPaths);
 };
@@ -127,6 +120,10 @@ export const registerReactiveContext = (entry: ReactiveRegistryEntry) => {
     const idx = registry.findIndex((existing) => entryKey(existing) === key);
     if (idx >= 0) registry.splice(idx, 1);
   };
+};
+
+export const listReactiveContexts = (): ReadonlyArray<ReactiveRegistryEntry> => {
+  return registry.slice();
 };
 
 export const resolveReactiveConfig = (params: {
@@ -178,9 +175,7 @@ export const readReactiveArtifactState = (params: {
   if (!uri) return null;
   try {
     if (typeof window === "undefined") return null;
-    const raw = window.localStorage.getItem(
-      reactiveStateStorageKey(uri, params.scope),
-    );
+    const raw = window.localStorage.getItem(reactiveStateStorageKey(uri, params.scope));
     if (!raw) return null;
     const parsed = JSON.parse(raw);
     if (!parsed || typeof parsed !== "object") return null;
@@ -260,10 +255,10 @@ export const subscribeReactiveArtifactState = (
   };
 
   window.addEventListener("storage", onStorage);
-  window.addEventListener(REACTIVE_STATE_EVENT, onCustom as EventListener);
+  window.addEventListener(REACTIVE_STATE_EVENT, onCustom);
 
   return () => {
     window.removeEventListener("storage", onStorage);
-    window.removeEventListener(REACTIVE_STATE_EVENT, onCustom as EventListener);
+    window.removeEventListener(REACTIVE_STATE_EVENT, onCustom);
   };
 };
